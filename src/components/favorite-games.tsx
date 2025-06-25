@@ -47,7 +47,7 @@ export function TopUpCategories() {
         </div>
 
         {!selectedCategory ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-2 gap-6 md:gap-8">
             {mainCategories.map((category) => (
               <div
                 key={category.id}
@@ -56,7 +56,7 @@ export function TopUpCategories() {
               >
                 <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80 bg-secondary">
                   <CardContent className="p-0">
-                    <div className="aspect-video relative">
+                    <div className="aspect-[3/4] relative">
                       <Image
                         src={category.imageUrl}
                         alt={category.title}
@@ -74,12 +74,12 @@ export function TopUpCategories() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-in fade-in-20 slide-in-from-left-12 duration-500">
+          <div className="grid grid-cols-2 gap-4 md:gap-6 animate-in fade-in-20 slide-in-from-left-12 duration-500">
             {subCategories.map((category) => (
               <Link href={`/top-up/${category.slug}`} key={category.id} className="group block">
                 <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80 bg-secondary">
                   <CardContent className="p-0">
-                    <div className="aspect-[1/1] relative">
+                    <div className="aspect-[3/4] relative">
                       <Image
                         src={category.imageUrl}
                         alt={category.title}
