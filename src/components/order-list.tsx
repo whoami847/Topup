@@ -1,25 +1,31 @@
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Order } from "@/lib/store";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Package } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" } = {
-    "Completed": "default",
-    "Pending": "secondary",
-    "Failed": "destructive",
+const statusConfig = {
+    Completed: {
+      variant: "default" as const,
+      className: "bg-green-500 text-primary-foreground border-transparent hover:bg-green-600",
+      text: "Completed",
+    },
+    Pending: {
+      variant: "outline" as const,
+      className: "bg-gray-300 text-gray-900 dark:bg-gray-600 dark:text-gray-200 border-transparent",
+      text: "Processing",
+    },
+    Failed: {
+      variant: "destructive" as const,
+      className: "border-transparent",
+      text: "Failed",
+    },
 };
+
 
 export function OrderList({ orders }: { orders: Order[] }) {
   if (orders.length === 0) {
@@ -37,33 +43,29 @@ export function OrderList({ orders }: { orders: Order[] }) {
   }
 
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Order ID</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="text-center">Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="font-mono text-xs text-muted-foreground">{order.id}</TableCell>
-              <TableCell className="font-medium whitespace-nowrap">{order.date}</TableCell>
-              <TableCell>{order.description}</TableCell>
-              <TableCell className="text-right font-semibold">৳{order.amount.toFixed(2)}</TableCell>
-              <TableCell className="text-center">
-                <Badge variant={statusVariantMap[order.status] ?? 'default'}>
-                  {order.status}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+    <div className="space-y-4">
+      {orders.map((order) => {
+        const config = statusConfig[order.status] ?? statusConfig.Pending;
+        return (
+            <Card key={order.id} className="p-4 shadow-md bg-secondary/30">
+                <div className="flex items-center gap-4">
+                    <div className="bg-primary/10 p-3 rounded-lg flex-shrink-0">
+                        <Package className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-grow min-w-0">
+                        <p className="font-semibold truncate">{order.description}</p>
+                        <p className="text-sm text-muted-foreground">{order.date}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                        <p className="font-bold text-lg mb-1 whitespace-nowrap">৳{order.amount.toFixed(2)}</p>
+                        <Badge variant={config.variant} className={cn('text-xs font-bold', config.className)}>
+                            {config.text}
+                        </Badge>
+                    </div>
+                </div>
+            </Card>
+        );
+      })}
+    </div>
   );
 }

@@ -38,7 +38,7 @@ export function WalletForm() {
 
     addTransaction({
         id: `TXN-${Date.now()}`,
-        date: format(new Date(), 'yyyy-MM-dd'),
+        date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
         description: 'Wallet Top-up',
         amount: values.amount,
         status: 'Completed'

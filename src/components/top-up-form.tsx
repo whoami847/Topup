@@ -122,7 +122,7 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
 
     const orderId = `ORD-${Date.now()}`;
     const transactionId = `TXN-${Date.now()}`;
-    const currentDate = format(new Date(), 'yyyy-MM-dd');
+    const currentDate = format(new Date(), 'dd/MM/yyyy, HH:mm:ss');
     const orderDescription = `${selectedProduct.name} - ${category.title}`;
 
     addOrder({

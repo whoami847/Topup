@@ -80,7 +80,7 @@ export default function AccountPage() {
       const sevenDaysAgo = subDays(new Date(), 7);
       const recentOrders = orders.filter(order => {
         try {
-          const orderDate = parse(order.date, 'yyyy-MM-dd', new Date());
+          const orderDate = parse(order.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
           return isAfter(orderDate, sevenDaysAgo);
         } catch (e) {
           console.error("Error parsing date:", order.date);
