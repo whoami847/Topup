@@ -31,6 +31,7 @@ import { QuantityInput } from "./ui/quantity-input";
 import { Separator } from "./ui/separator";
 import { useAppStore } from "@/lib/store";
 import { format } from 'date-fns';
+import { Eye, EyeOff } from "lucide-react";
 
 const getValidationSchema = (category: TopUpCategory) => {
   let schemaObject: any = {
@@ -72,6 +73,8 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
   const router = useRouter();
   const { toast } = useToast();
   const { balance, setBalance, addOrder, addTransaction } = useAppStore();
+  const [showPassword, setShowPassword] = useState(false);
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const validationSchema = useMemo(() => getValidationSchema(category), [category]);
 
@@ -234,7 +237,27 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
             <FormField control={form.control} name="password" render={({field}) => (
                 <FormItem>
                     <FormLabel>PASSWORD *</FormLabel>
-                    <FormControl><Input type="password" placeholder="Enter password" {...field}/></FormControl>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          type={showPassword ? 'text' : 'password'} 
+                          placeholder="Enter password" 
+                          {...field}
+                          className="pr-12"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1/2 right-1 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={togglePasswordVisibility}
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                        </Button>
+                      </div>
+                    </FormControl>
                     <FormMessage />
                 </FormItem>
             )} />
