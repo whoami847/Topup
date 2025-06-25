@@ -1,0 +1,49 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WalletForm } from "@/components/wallet-form";
+import { TransactionList } from "@/components/transaction-list";
+import { DollarSign, Hourglass } from "lucide-react";
+
+export default function WalletPage() {
+  return (
+    <div className="container py-12">
+      <h1 className="text-4xl font-bold mb-8 font-headline">My Wallet</h1>
+      <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <Card className="bg-secondary">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Main Balance</CardTitle>
+            <DollarSign className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">$1,234.56</div>
+            <p className="text-xs text-muted-foreground">Available for immediate use</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-secondary">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Balance</CardTitle>
+            <Hourglass className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">$78.90</div>
+            <p className="text-xs text-muted-foreground">Awaiting confirmation</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-12">
+        <div className="lg:col-span-1">
+          <h2 className="text-2xl font-bold mb-4 font-headline">Top Up Wallet</h2>
+          <Card>
+            <CardContent className="pt-6">
+              <WalletForm />
+            </CardContent>
+          </Card>
+        </div>
+        <div className="lg:col-span-2">
+          <h2 className="text-2xl font-bold mb-4 font-headline">Transaction History</h2>
+          <TransactionList />
+        </div>
+      </div>
+    </div>
+  );
+}
