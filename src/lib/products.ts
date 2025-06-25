@@ -197,3 +197,42 @@ export const topUpCategories: TopUpCategory[] = [
     ],
   },
 ];
+
+
+export type MainCategory = {
+  id: string;
+  title: string;
+  imageHint: string;
+  imageUrl: string;
+  subCategorySlugs: string[];
+};
+
+export const mainCategories: MainCategory[] = [
+  {
+    id: 'free-fire',
+    title: 'FREE FIRE',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'free fire character',
+    subCategorySlugs: [
+      'diamond-top-up-bd',
+      'weekly-monthly-offer',
+      'ff-ingame-top-up',
+      'airdrop-ingame',
+      'indonesia-topup',
+    ],
+  },
+  {
+    id: 'vouchers',
+    title: 'VOUCHERS',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'gift card voucher',
+    subCategorySlugs: ['garena-shells-my', 'unipin-voucher-bd'],
+  },
+  {
+    id: 'pubg-top-up',
+    title: 'PUBG TOP UP',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'pubg helmet',
+    subCategorySlugs: ['pubg-mobile-uc'],
+  },
+];
