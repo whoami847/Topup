@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from "react";
+import Link from 'next/link';
 import {
   Accordion,
   AccordionContent,
@@ -8,9 +9,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WalletForm } from "@/components/wallet-form";
 import { TransactionList } from "@/components/transaction-list";
-import { Plus, List } from "lucide-react";
+import { Plus, List, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 
 export default function WalletPage() {
@@ -28,19 +28,18 @@ export default function WalletPage() {
       <h1 className="text-3xl md:text-4xl font-bold mb-8 font-headline">My Wallet</h1>
       
       <div className="max-w-2xl mx-auto space-y-6">
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          <AccordionItem value="item-1" className="border-none rounded-lg bg-secondary/50">
-            <AccordionTrigger className="p-4 hover:no-underline font-semibold text-lg data-[state=open]:border-b">
-              <div className="flex items-center gap-4">
-                <Plus className="h-6 w-6 text-primary" />
-                <span>Wallet topup</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="p-4 pt-2">
-                <WalletForm />
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="item-2" className="border-none rounded-lg bg-secondary/50">
+        <Link href="/wallet/top-up" className="block p-4 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors">
+            <div className="flex items-center justify-between font-semibold text-lg">
+                <div className="flex items-center gap-4">
+                    <Plus className="h-6 w-6 text-primary" />
+                    <span>Wallet topup</span>
+                </div>
+                <ChevronRight className="h-6 w-6 text-muted-foreground" />
+            </div>
+        </Link>
+        
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="transactions" className="border-none rounded-lg bg-secondary/50">
             <AccordionTrigger className="p-4 hover:no-underline font-semibold text-lg data-[state=open]:border-b">
               <div className="flex items-center gap-4">
                 <List className="h-6 w-6 text-primary" />
