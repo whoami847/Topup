@@ -47,7 +47,7 @@ export function TopUpCategories() {
         </div>
 
         {!selectedCategory ? (
-          <div className="grid grid-cols-2 gap-6 md:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 animate-in fade-in-50 duration-500">
             {mainCategories.map((category) => (
               <div
                 key={category.id}
@@ -74,7 +74,7 @@ export function TopUpCategories() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 md:gap-6 animate-in fade-in-20 slide-in-from-left-12 duration-500">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-in fade-in-20 slide-in-from-left-12 duration-500">
             {subCategories.map((category) => (
               <Link href={`/top-up/${category.slug}`} key={category.id} className="group block">
                 <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80 bg-secondary">

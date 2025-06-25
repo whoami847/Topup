@@ -30,6 +30,7 @@ export function Footer() {
                 <Link href="/about" className="hover:text-primary transition-colors">About BurnerStore</Link>
                 <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
                 <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+                <Link href="/admin" className="hover:text-primary transition-colors">Admin Panel</Link>
             </div>
         </div>
 
