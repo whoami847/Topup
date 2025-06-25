@@ -9,8 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import type { Order } from "@/lib/store";
+import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" } = {
     "Completed": "default",
@@ -21,9 +24,15 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
 export function OrderList({ orders }: { orders: Order[] }) {
   if (orders.length === 0) {
     return (
-        <div className="text-center text-muted-foreground py-16">
-            <p className="text-lg">You haven't placed any orders yet.</p>
-        </div>
+        <Card className="mt-4 shadow-lg">
+            <CardContent className="flex flex-col items-center justify-center gap-2 py-20 text-center">
+                <AlertCircle className="h-16 w-16 text-primary mb-4" />
+                <h3 className="text-xl font-bold">No orders have been made yet.</h3>
+                <Link href="/" className="mt-4">
+                    <Button size="lg">Browse Products</Button>
+                </Link>
+            </CardContent>
+        </Card>
     )
   }
 
