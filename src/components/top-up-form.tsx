@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,6 +28,8 @@ import type { TopUpCategory } from "@/lib/products";
 import { cn } from "@/lib/utils";
 import { QuantityInput } from "./ui/quantity-input";
 import { Separator } from "./ui/separator";
+import { useAppStore } from "@/lib/store";
+import { format } from 'date-fns';
 
 const getValidationSchema = (category: TopUpCategory) => {
   let schemaObject: any = {
@@ -66,7 +68,10 @@ const getValidationSchema = (category: TopUpCategory) => {
 };
 
 export function TopUpForm({ category }: { category: TopUpCategory }) {
+  const router = useRouter();
   const { toast } = useToast();
+  const { balance, setBalance, addOrder, addTransaction } = useAppStore();
+
   const validationSchema = useMemo(() => getValidationSchema(category), [category]);
 
   const form = useForm<z.infer<typeof validationSchema>>({
@@ -89,15 +94,60 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
     } else {
       setTotalPrice(0);
     }
-  }, [selectedProductId, quantity, category]);
+  }, [selectedProductId, quantity, category, category.products, category.formFields]);
   
   function onSubmit(values: z.infer<typeof validationSchema>) {
-    console.log({ ...values, totalPrice });
+    const selectedProduct = category.products.find(p => p.id === values.productId);
+    if (!selectedProduct) {
+        toast({
+            title: "Error",
+            description: "Please select a product before purchasing.",
+            variant: "destructive"
+        });
+        return;
+    }
+    
+    if (balance < totalPrice) {
+        toast({
+            title: "Insufficient Balance",
+            description: "Your wallet balance is too low. Please add funds to continue.",
+            variant: "destructive"
+        });
+        router.push('/wallet');
+        return;
+    }
+
+    const newBalance = balance - totalPrice;
+    setBalance(newBalance);
+
+    const orderId = `ORD-${Date.now()}`;
+    const transactionId = `TXN-${Date.now()}`;
+    const currentDate = format(new Date(), 'yyyy-MM-dd');
+    const orderDescription = `${selectedProduct.name} - ${category.title}`;
+
+    addOrder({
+        id: orderId,
+        date: currentDate,
+        description: orderDescription,
+        amount: totalPrice,
+        status: "Completed",
+    });
+
+    addTransaction({
+        id: transactionId,
+        date: currentDate,
+        description: `Purchase: ${selectedProduct.name}`,
+        amount: -totalPrice,
+        status: "Completed"
+    });
+
     toast({
       title: "Order Placed!",
-      description: `Your order has been submitted successfully. Total: ৳${totalPrice}`,
+      description: `Your order for ${selectedProduct.name} has been submitted successfully.`,
     });
-    form.reset({ quantity: 1 });
+
+    form.reset({ quantity: 1, productId: undefined });
+    router.push('/orders');
   }
 
   const renderField = (fieldName: string) => {

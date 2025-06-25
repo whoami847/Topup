@@ -1,8 +1,15 @@
+'use client';
+
+import { useAppStore } from "@/lib/store";
+import { OrderList } from "@/components/order-list";
+
 export default function OrdersPage() {
+  const { orders } = useAppStore();
+
   return (
-    <div className="container py-12 min-h-[60vh] flex flex-col items-center justify-center text-center">
-      <h1 className="text-4xl font-bold mb-4 font-headline">Order List</h1>
-      <p className="text-muted-foreground text-lg">This is the order list page. Content will be added here soon.</p>
+    <div className="container py-8 md:py-12">
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 font-headline">My Orders</h1>
+      <OrderList orders={orders} />
     </div>
   );
 }

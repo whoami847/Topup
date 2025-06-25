@@ -10,8 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { useAppStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import type { Order } from "@/lib/store";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" } = {
     "Completed": "default",
@@ -19,13 +18,11 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
     "Failed": "destructive",
 };
 
-export function TransactionList() {
-  const { transactions } = useAppStore();
-
-  if (transactions.length === 0) {
+export function OrderList({ orders }: { orders: Order[] }) {
+  if (orders.length === 0) {
     return (
         <div className="text-center text-muted-foreground py-16">
-            <p className="text-lg">You have no transactions yet.</p>
+            <p className="text-lg">You haven't placed any orders yet.</p>
         </div>
     )
   }
@@ -35,6 +32,7 @@ export function TransactionList() {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Order ID</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Description</TableHead>
             <TableHead className="text-right">Amount</TableHead>
@@ -42,19 +40,15 @@ export function TransactionList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              <TableCell className="font-medium whitespace-nowrap">{transaction.date}</TableCell>
-              <TableCell>{transaction.description}</TableCell>
-              <TableCell className={cn(
-                  "text-right font-semibold",
-                  transaction.amount >= 0 ? "text-green-500" : "text-destructive"
-              )}>
-                {transaction.amount >= 0 ? '+' : ''}৳{transaction.amount.toFixed(2)}
-              </TableCell>
+          {orders.map((order) => (
+            <TableRow key={order.id}>
+              <TableCell className="font-mono text-xs text-muted-foreground">{order.id}</TableCell>
+              <TableCell className="font-medium whitespace-nowrap">{order.date}</TableCell>
+              <TableCell>{order.description}</TableCell>
+              <TableCell className="text-right font-semibold">৳{order.amount.toFixed(2)}</TableCell>
               <TableCell className="text-center">
-                <Badge variant={statusVariantMap[transaction.status] ?? 'default'}>
-                  {transaction.status}
+                <Badge variant={statusVariantMap[order.status] ?? 'default'}>
+                  {order.status}
                 </Badge>
               </TableCell>
             </TableRow>

@@ -1,9 +1,22 @@
+'use client';
+
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WalletForm } from "@/components/wallet-form";
 import { TransactionList } from "@/components/transaction-list";
 import { DollarSign } from "lucide-react";
+import { useAppStore } from "@/lib/store";
 
 export default function WalletPage() {
+  const store = useAppStore();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const balance = store.balance;
+
   return (
     <div className="container py-12">
       <h1 className="text-4xl font-bold mb-8 font-headline">My Wallet</h1>
@@ -14,7 +27,7 @@ export default function WalletPage() {
             <DollarSign className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">$0.00</div>
+            <div className="text-3xl font-bold">{isClient ? `৳${balance.toFixed(2)}` : '৳0.00'}</div>
             <p className="text-xs text-muted-foreground">Available for immediate use</p>
           </CardContent>
         </Card>
