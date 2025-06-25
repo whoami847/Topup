@@ -27,20 +27,22 @@ export function Header() {
           <Flame className="h-7 w-7 text-primary" />
           <span className="font-headline hidden sm:inline-block">BurnerStore</span>
         </Link>
-        <nav className="flex flex-row items-center gap-1 md:gap-2 text-sm font-medium text-muted-foreground ml-auto">
-            {navLinks.map(({ href, label, icon: Icon }) => (
-                <Link
-                key={label}
-                href={href}
-                className="flex items-center gap-2 transition-colors hover:text-foreground p-2 rounded-md hover:bg-secondary/50"
-                title={label}
-                >
-                <Icon className="h-4 w-4" />
-                <span className="hidden md:inline-block">{label}</span>
-                </Link>
-            ))}
-        </nav>
-        <Button size="sm">Login / Register</Button>
+        <div className="ml-auto flex items-center gap-4">
+          <nav className="hidden md:flex flex-row items-center gap-2 text-sm font-medium text-muted-foreground">
+              {navLinks.map(({ href, label, icon: Icon }) => (
+                  <Link
+                  key={label}
+                  href={href}
+                  className="flex items-center gap-2 transition-colors hover:text-foreground p-2 rounded-md hover:bg-secondary/50"
+                  title={label}
+                  >
+                  <Icon className="h-4 w-4" />
+                  <span>{label}</span>
+                  </Link>
+              ))}
+          </nav>
+          <Button size="sm">Login / Register</Button>
+        </div>
       </div>
     </header>
   );
