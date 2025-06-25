@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function HeroSection() {
   return (
@@ -9,8 +10,7 @@ export function HeroSection() {
         src="https://placehold.co/1920x1080.png"
         alt="Free Fire Diamonds Banner"
         fill
-        objectFit="cover"
-        className="z-0"
+        className="object-cover z-0"
         data-ai-hint="gaming background"
         priority
       />
@@ -24,10 +24,12 @@ export function HeroSection() {
         <p className="max-w-2xl text-lg md:text-xl text-neutral-200">
           Get your game diamonds instantly and securely. The best prices, guaranteed.
         </p>
-        <Button size="lg" className="text-lg px-8 py-6 rounded-full font-bold group">
-          Top Up Now
-          <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-        </Button>
+        <Link href="/top-up/diamond-top-up-bd">
+          <Button size="lg" className="text-lg px-8 py-6 rounded-full font-bold group">
+            Top Up Now
+            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </Link>
       </div>
     </section>
   );

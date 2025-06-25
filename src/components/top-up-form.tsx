@@ -1,0 +1,270 @@
+"use client";
+
+import React, { useMemo, useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import type { TopUpCategory } from "@/lib/products";
+import { cn } from "@/lib/utils";
+import { QuantityInput } from "./ui/quantity-input";
+import { Separator } from "./ui/separator";
+
+const getValidationSchema = (category: TopUpCategory) => {
+  let schemaObject: any = {
+    productId: z.string({ required_error: "Please select an option." }),
+  };
+
+  if (category.formFields.includes("player_id")) {
+    schemaObject.player_id = z
+      .string()
+      .min(5, "Please enter a valid Player ID.");
+  }
+  if (category.formFields.includes("email")) {
+    schemaObject.email = z.string().email("Please enter a valid email.");
+  }
+  if (category.formFields.includes("account_type")) {
+    schemaObject.account_type = z.string({
+      required_error: "Please select an account type.",
+    });
+  }
+  if (category.formFields.includes("email_phone")) {
+    schemaObject.email_phone = z.string().min(1, "This field is required.");
+  }
+  if (category.formFields.includes("password")) {
+    schemaObject.password = z
+      .string()
+      .min(6, "Password must be at least 6 characters.");
+  }
+  if (category.formFields.includes("two_step_code")) {
+    schemaObject.two_step_code = z.string().optional();
+  }
+  if (category.formFields.includes("quantity")) {
+    schemaObject.quantity = z.number().min(1).max(99);
+  }
+
+  return z.object(schemaObject);
+};
+
+export function TopUpForm({ category }: { category: TopUpCategory }) {
+  const { toast } = useToast();
+  const validationSchema = useMemo(() => getValidationSchema(category), [category]);
+
+  const form = useForm<z.infer<typeof validationSchema>>({
+    resolver: zodResolver(validationSchema),
+    defaultValues: {
+      quantity: 1,
+    },
+  });
+
+  const selectedProductId = form.watch("productId");
+  const quantity = form.watch("quantity");
+
+  const [totalPrice, setTotalPrice] = useState(0);
+
+  useEffect(() => {
+    const selectedProduct = category.products.find(p => p.id === selectedProductId);
+    if (selectedProduct) {
+      const q = category.formFields.includes("quantity") ? quantity : 1;
+      setTotalPrice(selectedProduct.price * q);
+    } else {
+      setTotalPrice(0);
+    }
+  }, [selectedProductId, quantity, category]);
+  
+  function onSubmit(values: z.infer<typeof validationSchema>) {
+    console.log({ ...values, totalPrice });
+    toast({
+      title: "Order Placed!",
+      description: `Your order has been submitted successfully. Total: ৳${totalPrice}`,
+    });
+    form.reset({ quantity: 1 });
+  }
+
+  const renderField = (fieldName: string) => {
+    switch (fieldName) {
+      case "player_id":
+        return (
+          <FormField
+            control={form.control}
+            name="player_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>PLAYER ID *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter Player ID (UID)" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        );
+      case "email":
+        return (
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>EMAIL *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter your email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        );
+      case "account_type":
+        return (
+          <FormField
+            control={form.control}
+            name="account_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>SELECT ACCOUNT TYPE *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="google">Google</SelectItem>
+                    <SelectItem value="vk">VK</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        );
+      case "email_phone":
+        return (
+            <FormField control={form.control} name="email_phone" render={({field}) => (
+                <FormItem>
+                    <FormLabel>EMAIL / PHONE *</FormLabel>
+                    <FormControl><Input placeholder="Enter Email or Phone" {...field}/></FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
+        );
+      case "password":
+        return (
+            <FormField control={form.control} name="password" render={({field}) => (
+                <FormItem>
+                    <FormLabel>PASSWORD *</FormLabel>
+                    <FormControl><Input type="password" placeholder="Enter password" {...field}/></FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
+        );
+      case "two_step_code":
+        return (
+            <FormField control={form.control} name="two_step_code" render={({field}) => (
+                <FormItem>
+                    <FormLabel>TWO STEP CODE</FormLabel>
+                    <FormControl><Input placeholder="Enter two step backup code if enabled" {...field}/></FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
+        );
+      case "quantity":
+        return (
+          <FormField
+            control={form.control}
+            name="quantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>QUANTITY *</FormLabel>
+                <FormControl>
+                    <QuantityInput value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="productId"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel className="text-base font-bold">Select Option</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                >
+                  {category.products.map((product) => (
+                    <FormItem key={product.id}>
+                      <FormControl>
+                        <RadioGroupItem value={product.id} id={product.id} className="sr-only" />
+                      </FormControl>
+                      <FormLabel htmlFor={product.id} className={cn(
+                          "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                          field.value === product.id && "border-primary text-primary"
+                      )}>
+                        <span className="text-center font-semibold">{product.name}</span>
+                        <span className="text-sm">৳{product.price}</span>
+                      </FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="space-y-4">
+            {category.formFields.map((fieldName) => (
+                <React.Fragment key={fieldName}>
+                    {renderField(fieldName)}
+                </React.Fragment>
+            ))}
+        </div>
+
+        <Separator />
+
+        <div className="flex justify-between items-center bg-card-foreground/5 p-4 rounded-lg">
+            <span className="text-xl font-bold">Total:</span>
+            <span className="text-2xl font-bold text-primary">৳{totalPrice.toFixed(2)}</span>
+        </div>
+
+        <Button type="submit" size="lg" className="w-full text-lg font-bold">
+          Buy Now
+        </Button>
+      </form>
+    </Form>
+  );
+}

@@ -1,0 +1,199 @@
+export type Product = {
+  id: string;
+  name: string;
+  price: number;
+  icon?: string;
+};
+
+export type FormFieldType =
+  | 'player_id'
+  | 'email'
+  | 'account_type'
+  | 'email_phone'
+  | 'password'
+  | 'two_step_code'
+  | 'quantity';
+
+export type TopUpCategory = {
+  id: string;
+  slug: string;
+  title: string;
+  imageUrl: string;
+  imageHint: string;
+  pageTitle: string;
+  products: Product[];
+  formFields: FormFieldType[];
+  description: string[];
+};
+
+export const topUpCategories: TopUpCategory[] = [
+  {
+    id: '1',
+    slug: 'diamond-top-up-bd',
+    title: 'DIAMOND TOP UP [BD]',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'diamond topup',
+    pageTitle: 'FREE FIRE TOPUP BD',
+    products: [
+      { id: 'dtb_1', name: '25 Diamond', price: 22 },
+      { id: 'dtb_2', name: '50 Diamond', price: 35 },
+      { id: 'dtb_3', name: '75 Diamond', price: 60 },
+      { id: 'dtb_4', name: '100 Diamond', price: 70 },
+      { id: 'dtb_5', name: '200 Diamond', price: 135 },
+      { id: 'dtb_6', name: '250 Diamond', price: 180 },
+      { id: 'dtb_7', name: '300 Diamond', price: 205 },
+      { id: 'dtb_8', name: '400 Diamond', price: 275 },
+      { id: 'dtb_9', name: '500 Diamond', price: 340 },
+      { id: 'dtb_10', name: '5060 Diamond', price: 2960 },
+      { id: 'dtb_11', name: 'Weekly', price: 144 },
+      { id: 'dtb_12', name: 'Monthly', price: 710 },
+      { id: 'dtb_13', name: 'Level Up Pass', price: 145 },
+    ],
+    formFields: ['player_id'],
+    description: [
+      'অনুগ্রহ করে Bangladesh সার্ভারের ID Code দিয়ে টপ আপ করবেন।',
+      'Player ID Code ভুল দিলে Diamond না পেলে কর্তৃপক্ষ দায়ী নয়।',
+    ],
+  },
+  {
+    id: '2',
+    slug: 'weekly-monthly-offer',
+    title: 'WEEKLY MONTHLY OFFER',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'weekly offer',
+    pageTitle: 'WEEKLY MONTHLY OFFER',
+    products: [
+      { id: 'wmo_1', name: 'Weekly', price: 144 },
+      { id: 'wmo_2', name: '2 Weekly', price: 288 },
+      { id: 'wmo_3', name: '3 Weekly', price: 432 },
+      { id: 'wmo_4', name: '4 Weekly', price: 576 },
+      { id: 'wmo_5', name: '5 Weekly', price: 720 },
+      { id: 'wmo_6', name: 'Monthly', price: 710 },
+      { id: 'wmo_7', name: '10Weekly+5Monthly', price: 4910 },
+    ],
+    formFields: ['player_id'],
+    description: [
+      'অনুগ্রহ করে Bangladesh সার্ভারের ID Code দিয়ে টপ আপ করবেন।',
+      'Player ID Code ভুল দিলে Diamond না পেলে কর্তৃপক্ষ দায়ী নয়।',
+    ],
+  },
+  {
+    id: '3',
+    slug: 'ff-ingame-top-up',
+    title: 'FF IN-GAME TOP UP',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'ingame topup',
+    pageTitle: 'FF IN-GAME TOP UP',
+    products: [
+      { id: 'fft_1', name: '520 Diamond', price: 250 },
+      { id: 'fft_2', name: '1060 Diamond', price: 480 },
+      { id: 'fft_3', name: '2180 Diamond', price: 950 },
+      { id: 'fft_4', name: '5600 Diamond', price: 2380 },
+    ],
+    formFields: ['account_type', 'email_phone', 'password', 'two_step_code'],
+    description: [
+      'অর্ডার করার আগে আপনার আইডি পাসওয়ার্ড চেক করে অর্ডার করুন।',
+      'Facebook এ ২ স্টেপ চালু থাকলে ব্যাকআপ কোড অবশ্যই দিবেন।',
+      'Gmail আইডি হলে Backup Code সাথে দিবেন।',
+    ],
+  },
+  {
+    id: '4',
+    slug: 'airdrop-ingame',
+    title: 'AIRDROP [INGAME]',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'airdrop crate',
+    pageTitle: 'AIRDROP [INGAME]',
+    products: [
+      { id: 'ai_1', name: '96% Airdrop', price: 55 },
+      { id: 'ai_2', name: 'Mixed Bundle 1', price: 75 },
+      { id: 'ai_3', name: 'Mixed Bundle 2', price: 85 },
+    ],
+    formFields: ['account_type', 'email_phone', 'password', 'two_step_code'],
+    description: [
+      'অর্ডার করার আগে আপনার আইডি পাসওয়ার্ড চেক করে অর্ডার করুন।',
+      'Facebook এ ২ স্টেপ চালু থাকলে ব্যাকআপ কোড অবশ্যই দিবেন।',
+      'Gmail আইডি হলে Backup Code সাথে দিবেন।',
+    ],
+  },
+  {
+    id: '5',
+    slug: 'indonesia-topup',
+    title: 'INDONESIA TOPUP',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'indonesia flag',
+    pageTitle: 'INDONESIA TOPUP',
+    products: [
+      { id: 'it_1', name: '5 Diamond', price: 14 },
+      { id: 'it_2', name: '100 Diamond', price: 130 },
+      { id: 'it_3', name: 'Weekly Membership', price: 165 },
+      { id: 'it_4', name: 'Monthly Membership', price: 445 },
+      { id: 'it_5', name: 'Booyah Pass', price: 455 },
+    ],
+    formFields: ['player_id', 'quantity'],
+    description: [
+      'অনুগ্রহ করে Indonesia সার্ভারের ID Code দিয়ে টপ আপ করবেন।',
+      'অর্ডার কনফার্ম হওয়ার পরেও আইডি/ভিডিওতে ডায়মন্ড না পেলে চেক করার জন্য ID Pass দিতে হবে।',
+    ],
+  },
+  {
+    id: '6',
+    slug: 'garena-shells-my',
+    title: 'Garena Shells MY',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'garena logo',
+    pageTitle: 'Garena Shells MY',
+    products: [
+      { id: 'gs_1', name: '65 Shell MY', price: 125 },
+      { id: 'gs_2', name: '130 Shell MY', price: 235 },
+      { id: 'gs_3', name: '325 Shell MY', price: 560 },
+      { id: 'gs_4', name: '650 Shell MY', price: 1060 },
+      { id: 'gs_5', name: '1300 Shell MY', price: 2060 },
+    ],
+    formFields: ['email', 'quantity'],
+    description: [
+      'Garena Shells can be used to purchase in-game items on the Garena platform.',
+      'You will receive the Shell code at the email address provided.',
+    ],
+  },
+  {
+    id: '7',
+    slug: 'unipin-voucher-bd',
+    title: 'UNIPIN VOUCHER BD',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'voucher card',
+    pageTitle: 'UNIPIN VOUCHER BD',
+    products: [
+      { id: 'uv_1', name: '25 Diamond 20 UC', price: 19 },
+      { id: 'uv_2', name: '50 Diamond 40 UC', price: 38 },
+      { id: 'uv_3', name: '100 Diamond 80 UC', price: 75 },
+      { id: 'uv_4', name: '2000 UC Gift Card', price: 1742 },
+    ],
+    formFields: ['email'],
+    description: [
+      'প্রথমে কত ডায়মন্ড কিনতে চান সে অনুযায়ী Unipin Voucher পিন সিলেক্ট করুন।',
+      'তারপর Garena ওয়েবসাইটে গিয়ে Process to Payment এ ক্লিক করুন।',
+    ],
+  },
+  {
+    id: '8',
+    slug: 'pubg-mobile-uc',
+    title: 'PUBG MOBILE UC',
+    imageUrl: 'https://placehold.co/400x400.png',
+    imageHint: 'pubg character',
+    pageTitle: 'PUBG MOBILE UC',
+    products: [
+      { id: 'pm_1', name: 'PUBG 60 UC', price: 115 },
+      { id: 'pm_2', name: 'PUBG 325 UC', price: 540 },
+      { id: 'pm_3', name: 'PUBG 660 UC', price: 1080 },
+      { id: 'pm_4', name: 'PUBG 1800 UC', price: 2700 },
+      { id: 'pm_5', name: 'PUBG 3850 UC', price: 5400 },
+      { id: 'pm_6', name: 'PUBG 8100 UC', price: 10800 },
+    ],
+    formFields: ['player_id'],
+    description: [
+      'Player ID Code ভুল দিলে UC না পেলে কর্তৃপক্ষ দায়ী নয়।',
+      'অর্ডার কনফার্ম হওয়ার পরেও আইডি/ভিডিওতে UC না পেলে চেক করার জন্য ID Pass দিতে হবে।',
+    ],
+  },
+];
