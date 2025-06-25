@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -5,9 +6,25 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Archive } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { topUpCategories } from '@/lib/products';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminProductsPage() {
+  const allProducts = topUpCategories.flatMap(category => 
+    category.products.map(product => ({
+      ...product,
+      categoryTitle: category.title,
+    }))
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -15,10 +32,34 @@ export default function AdminProductsPage() {
         <CardDescription>Manage your store's products.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col items-center justify-center gap-4 text-center h-64">
-            <Archive className="h-16 w-16 text-muted-foreground" />
-            <p className="text-muted-foreground">Product management is coming soon.</p>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allProducts.length > 0 ? (
+              allProducts.map((product) => (
+                <TableRow key={product.id}>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{product.categoryTitle}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">৳{product.price.toFixed(2)}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center">
+                  No products found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
