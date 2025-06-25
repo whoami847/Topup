@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -5,9 +6,10 @@ import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LayoutGrid, ListOrdered, User, LogOut, ShoppingBag, Wallet } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { subDays, isAfter, parse } from 'date-fns';
+import { LoginRequired } from '@/components/auth/login-required';
 
 const DashboardStatCard = ({ title, value, icon: Icon, formatAsCurrency = false }) => (
   <Card className="bg-secondary/50">
@@ -25,19 +27,26 @@ const DashboardStatCard = ({ title, value, icon: Icon, formatAsCurrency = false 
 
 const AccountSidebar = () => {
     const pathname = usePathname();
+    const router = useRouter();
+    const { logoutUser } = useAppStore();
+
+    const handleLogout = () => {
+        logoutUser();
+        router.push('/');
+    };
+
     const navLinks = [
         { href: '/account', label: 'Dashboard', icon: LayoutGrid },
         { href: '/orders', label: 'Orders', icon: ListOrdered },
         // These are placeholders for now
-        { href: '#', label: 'Account details', icon: User },
-        { href: '#', label: 'Logout', icon: LogOut },
+        { href: '#', label: 'Account details', icon: User, disabled: true },
     ];
 
     return (
         <aside>
             <Card className="bg-secondary/50 p-2 sm:p-4">
                 <nav className="flex flex-col gap-1">
-                    {navLinks.map(({ href, label, icon: Icon }) => {
+                    {navLinks.map(({ href, label, icon: Icon, disabled }) => {
                         const isActive = pathname === href;
                         return (
                             <Link
@@ -45,7 +54,8 @@ const AccountSidebar = () => {
                                 href={href}
                                 className={cn(
                                     'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                                    isActive && 'bg-primary/10 text-primary font-bold'
+                                    isActive && 'bg-primary/10 text-primary font-bold',
+                                    disabled && 'pointer-events-none opacity-50'
                                 )}
                             >
                                 <Icon className="h-5 w-5" />
@@ -53,6 +63,15 @@ const AccountSidebar = () => {
                             </Link>
                         );
                     })}
+                     <button
+                        onClick={handleLogout}
+                        className={cn(
+                            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary'
+                        )}
+                    >
+                        <LogOut className="h-5 w-5" />
+                        Logout
+                    </button>
                 </nav>
             </Card>
         </aside>
@@ -60,7 +79,7 @@ const AccountSidebar = () => {
 }
 
 export default function AccountPage() {
-  const { orders } = useAppStore();
+  const { orders, currentUser } = useAppStore();
   const [stats, setStats] = React.useState({
     totalOrders: 0,
     totalSpent: 0,
@@ -73,7 +92,7 @@ export default function AccountPage() {
   }, []);
 
   React.useEffect(() => {
-    if (orders && isClient) {
+    if (orders && isClient && currentUser) {
       const totalOrders = orders.length;
       const totalSpent = orders.reduce((sum, order) => sum + order.amount, 0);
 
@@ -91,7 +110,7 @@ export default function AccountPage() {
 
       setStats({ totalOrders, totalSpent, spentLast7Days });
     }
-  }, [orders, isClient]);
+  }, [orders, isClient, currentUser]);
 
   if (!isClient) {
       return (
@@ -109,6 +128,14 @@ export default function AccountPage() {
               </div>
           </div>
       );
+  }
+
+  if (!currentUser) {
+    return (
+        <div className="container py-8 md:py-12">
+            <LoginRequired message="Access Your Account" />
+        </div>
+    );
   }
 
   return (
