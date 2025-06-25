@@ -23,8 +23,8 @@ export function UserNav() {
 
   if (!currentUser) return null;
 
-  const handleLogout = () => {
-    logoutUser();
+  const handleLogout = async () => {
+    await logoutUser();
     router.push('/');
   };
 
@@ -38,7 +38,7 @@ export function UserNav() {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
             <AvatarFallback className="bg-primary text-primary-foreground">
-                {getInitials(currentUser.email)}
+                {currentUser.email ? getInitials(currentUser.email) : '?'}
             </AvatarFallback>
           </Avatar>
         </Button>

@@ -10,6 +10,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { subDays, isAfter, parse } from 'date-fns';
 import { LoginRequired } from '@/components/auth/login-required';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const DashboardStatCard = ({ title, value, icon: Icon, formatAsCurrency = false }) => (
   <Card className="bg-secondary/50">
@@ -30,8 +31,8 @@ const AccountSidebar = () => {
     const router = useRouter();
     const { logoutUser } = useAppStore();
 
-    const handleLogout = () => {
-        logoutUser();
+    const handleLogout = async () => {
+        await logoutUser();
         router.push('/');
     };
 
@@ -78,21 +79,33 @@ const AccountSidebar = () => {
     );
 }
 
+const PageSkeleton = () => (
+    <div className="container py-8 md:py-12">
+        <div className="grid gap-8 md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
+            <Skeleton className="h-48 w-full rounded-lg" />
+            <div>
+                <Skeleton className="h-10 w-48 mb-8 rounded-lg" />
+                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    <Skeleton className="h-28 w-full rounded-lg" />
+                    <Skeleton className="h-28 w-full rounded-lg" />
+                    <Skeleton className="h-28 w-full rounded-lg" />
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+
 export default function AccountPage() {
-  const { orders, currentUser } = useAppStore();
+  const { orders, currentUser, isAuthLoading } = useAppStore();
   const [stats, setStats] = React.useState({
     totalOrders: 0,
     totalSpent: 0,
     spentLast7Days: 0,
   });
-  const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  React.useEffect(() => {
-    if (orders && isClient && currentUser) {
+    if (orders && currentUser) {
       const totalOrders = orders.length;
       const totalSpent = orders.reduce((sum, order) => sum + order.amount, 0);
 
@@ -110,24 +123,10 @@ export default function AccountPage() {
 
       setStats({ totalOrders, totalSpent, spentLast7Days });
     }
-  }, [orders, isClient, currentUser]);
+  }, [orders, currentUser]);
 
-  if (!isClient) {
-      return (
-          <div className="container py-8 md:py-12">
-              <div className="grid gap-8 md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
-                  <div className="h-48 w-full animate-pulse rounded-lg bg-secondary/50"></div>
-                  <div>
-                      <div className="h-10 w-48 animate-pulse rounded-lg bg-secondary/50 mb-8"></div>
-                      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                          <div className="h-28 w-full animate-pulse rounded-lg bg-secondary/50"></div>
-                          <div className="h-28 w-full animate-pulse rounded-lg bg-secondary/50"></div>
-                          <div className="h-28 w-full animate-pulse rounded-lg bg-secondary/50"></div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      );
+  if (isAuthLoading) {
+    return <PageSkeleton />;
   }
 
   if (!currentUser) {

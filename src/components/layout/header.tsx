@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import {
   Flame,
@@ -14,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { UserNav } from "../auth/user-nav";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { Skeleton } from "../ui/skeleton";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
@@ -24,7 +28,15 @@ const navLinks = [
 ];
 
 export function Header() {
-  const { currentUser, isAuthDialogOpen, setAuthDialogOpen } = useAppStore();
+  const { currentUser, isAuthDialogOpen, setAuthDialogOpen, _setCurrentUser, isAuthLoading } = useAppStore();
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      _setCurrentUser(user);
+    });
+
+    return () => unsubscribe();
+  }, [_setCurrentUser]);
 
   return (
     <>
@@ -48,7 +60,9 @@ export function Header() {
                     </Link>
                 ))}
             </nav>
-            {currentUser ? (
+            {isAuthLoading ? (
+                <Skeleton className="h-9 w-28" />
+            ) : currentUser ? (
               <UserNav />
             ) : (
               <Button size="sm" onClick={() => setAuthDialogOpen(true)}>Login / Register</Button>

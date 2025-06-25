@@ -50,8 +50,8 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = (data: z.infer<typeof loginSchema>) => {
-    const result = loginUser(data);
+  const onSubmit = async (data: z.infer<typeof loginSchema>) => {
+    const result = await loginUser(data);
     if (result.success) {
       toast({ title: 'Success', description: result.message });
       onLoginSuccess();
@@ -85,7 +85,9 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">Login</Button>
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? "Logging in..." : "Login"}
+        </Button>
       </form>
     </Form>
   );
@@ -100,8 +102,8 @@ function RegisterForm({ onRegisterSuccess }: { onRegisterSuccess: () => void }) 
         defaultValues: { email: '', password: '', confirmPassword: '' },
     });
 
-    const onSubmit = (data: z.infer<typeof registerSchema>) => {
-        const result = registerUser({ email: data.email, password: data.password });
+    const onSubmit = async (data: z.infer<typeof registerSchema>) => {
+        const result = await registerUser({ email: data.email, password: data.password });
         if (result.success) {
             toast({ title: 'Success', description: result.message });
             onRegisterSuccess();
@@ -134,7 +136,9 @@ function RegisterForm({ onRegisterSuccess }: { onRegisterSuccess: () => void }) 
                         <FormMessage />
                     </FormItem>
                 )} />
-                <Button type="submit" className="w-full">Create Account</Button>
+                 <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? "Creating Account..." : "Create Account"}
+                </Button>
             </form>
         </Form>
     );
