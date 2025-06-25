@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
@@ -74,11 +75,20 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
 
   const validationSchema = useMemo(() => getValidationSchema(category), [category]);
 
+  const defaultFormValues = {
+    productId: undefined,
+    player_id: '',
+    email: '',
+    account_type: undefined,
+    email_phone: '',
+    password: '',
+    two_step_code: '',
+    quantity: 1,
+  };
+
   const form = useForm<z.infer<typeof validationSchema>>({
     resolver: zodResolver(validationSchema),
-    defaultValues: {
-      quantity: 1,
-    },
+    defaultValues: defaultFormValues,
   });
 
   const selectedProductId = form.watch("productId");
@@ -113,7 +123,7 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
             description: "Your wallet balance is too low. Please add funds to continue.",
             variant: "destructive"
         });
-        router.push('/wallet');
+        router.push('/wallet/top-up');
         return;
     }
 
@@ -146,7 +156,7 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
       description: `Your order for ${selectedProduct.name} has been submitted successfully.`,
     });
 
-    form.reset({ quantity: 1, productId: undefined });
+    form.reset(defaultFormValues);
     router.push('/orders');
   }
 
