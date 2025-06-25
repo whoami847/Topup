@@ -36,7 +36,7 @@ const formSchema = z.object({
 
 export function WalletTopUpForm() {
   const { toast } = useToast();
-  const { addTransaction } = useAppStore();
+  const { addTransaction, balance, setBalance } = useAppStore();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -57,17 +57,20 @@ export function WalletTopUpForm() {
   };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    const newBalance = balance + values.amount;
+    setBalance(newBalance);
+
     addTransaction({
         id: `TXN-${Date.now()}`,
         date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
         description: `Wallet Top-up via ${values.paymentMethod}`,
         amount: values.amount,
-        status: 'Pending'
+        status: 'Completed'
     });
     
     toast({
-      title: "Request Submitted",
-      description: `Your top-up request of ৳${values.amount.toFixed(2)} is being reviewed.`,
+      title: "Top-up Successful",
+      description: `৳${values.amount.toFixed(2)} has been added to your main balance.`,
     });
 
     router.push('/wallet');
