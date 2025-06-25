@@ -2,14 +2,29 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, Settings, Flame } from 'lucide-react';
+import { 
+  Home, 
+  Package, 
+  Settings, 
+  Flame, 
+  Users, 
+  Grid, 
+  Archive, 
+  DollarSign, 
+  ArrowRightLeft 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
   { href: '/admin/orders', label: 'Orders', icon: Package },
-  { href: '#', label: 'Products', icon: Settings }, // Placeholder
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/categories', label: 'Categories', icon: Grid },
+  { href: '/admin/products', label: 'Products', icon: Archive },
+  { href: '/admin/product-prices', label: 'Product Prices', icon: DollarSign },
+  { href: '/admin/transactions', label: 'Transactions', icon: ArrowRightLeft },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AdminSidebar() {
@@ -21,7 +36,7 @@ export function AdminSidebar() {
         <Flame className="h-7 w-7 text-primary" />
         <span className="font-headline">Admin Panel</span>
       </div>
-      <nav className="flex flex-col gap-2">
+      <nav className="flex flex-1 flex-col gap-2 overflow-y-auto">
         {navLinks.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
@@ -39,7 +54,7 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-       <div className="mt-auto">
+       <div className="mt-auto pt-4">
          <Card>
             <CardHeader>
                 <CardTitle className="text-base">Need Help?</CardTitle>
