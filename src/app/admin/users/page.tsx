@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -19,11 +20,33 @@ import {
 import { useAppStore } from '@/lib/store';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Users } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const UserRowSkeleton = () => (
+    <TableRow>
+        <TableCell>
+            <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+            </div>
+        </TableCell>
+        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+        <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+    </TableRow>
+);
+
 
 export default function AdminUsersPage() {
   const { users, orders } = useAppStore();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const usersWithStats = React.useMemo(() => {
+    if (!isClient) return [];
     return users
         .filter(user => user.email) // Only show users with an email
         .map(user => {
@@ -35,7 +58,7 @@ export default function AdminUsersPage() {
                 totalSpent,
             };
     });
-  }, [users, orders]);
+  }, [users, orders, isClient]);
 
   const getInitials = (email: string | null) => {
     return email ? email.charAt(0).toUpperCase() : '?';
@@ -61,7 +84,13 @@ export default function AdminUsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {usersWithStats.length > 0 ? (
+            {!isClient ? (
+                <>
+                    <UserRowSkeleton />
+                    <UserRowSkeleton />
+                    <UserRowSkeleton />
+                </>
+            ) : usersWithStats.length > 0 ? (
               usersWithStats.map((user) => (
                 <TableRow key={user.uid}>
                    <TableCell>
