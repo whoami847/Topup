@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -5,20 +6,60 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { DollarSign } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { topUpCategories } from '@/lib/products';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminProductPricesPage() {
+  const allProducts = topUpCategories.flatMap(category => 
+    category.products.map(product => ({
+      ...product,
+      categoryTitle: category.title,
+    }))
+  ).sort((a, b) => b.price - a.price);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Product Prices</CardTitle>
-        <CardDescription>Manage the pricing for your products.</CardDescription>
+        <CardDescription>A list of all products and their current prices.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col items-center justify-center gap-4 text-center h-64">
-            <DollarSign className="h-16 w-16 text-muted-foreground" />
-            <p className="text-muted-foreground">Price management is coming soon.</p>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allProducts.length > 0 ? (
+              allProducts.map((product) => (
+                <TableRow key={product.id}>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{product.categoryTitle}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">৳{product.price.toFixed(2)}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center">
+                  No products found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
