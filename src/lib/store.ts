@@ -10,6 +10,7 @@ import {
     signOut
 } from 'firebase/auth';
 import { auth } from './firebase';
+import { format } from 'date-fns';
 
 
 export type Order = {
@@ -27,6 +28,7 @@ export type Transaction = {
   description: string;
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
+  userId: string;
 };
 
 export type User = {
@@ -51,6 +53,7 @@ type AppState = {
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   addTransaction: (transaction: Transaction) => void;
+  updateTransactionStatus: (transactionId: string, status: Transaction['status']) => void;
   registerUser: (credentials: Credentials) => Promise<{ success: boolean; message: string }>;
   loginUser: (credentials: Credentials) => Promise<{ success: boolean; message: string }>;
   logoutUser: () => Promise<void>;
@@ -78,6 +81,28 @@ export const useAppStore = create<AppState>()(
         })),
       addTransaction: (transaction) => set((state) => ({ transactions: [transaction, ...state.transactions] })),
       
+      updateTransactionStatus: (transactionId, status) =>
+        set((state) => {
+          let newBalance = state.balance;
+          const originalTransaction = state.transactions.find((t) => t.id === transactionId);
+
+          // Prevent re-processing or acting on non-pending transactions
+          if (!originalTransaction || originalTransaction.status !== 'Pending') {
+            return {}; // No change
+          }
+
+          const newTransactions = state.transactions.map((t) =>
+            t.id === transactionId ? { ...t, status } : t
+          );
+
+          // Only add to balance if it's a 'Completed' top-up (positive amount)
+          if (status === 'Completed' && originalTransaction.amount > 0) {
+            newBalance += originalTransaction.amount;
+          }
+
+          return { transactions: newTransactions, balance: newBalance };
+        }),
+
       _setCurrentUser: (user) => {
         if (user) {
           const newUser: User = { uid: user.uid, email: user.email };

@@ -17,7 +17,7 @@ export default function AdminTransactionsPage() {
         <CardDescription>A list of all transactions from your store.</CardDescription>
       </CardHeader>
       <CardContent>
-        <TransactionList />
+        <TransactionList isAdminView={true} />
       </CardContent>
     </Card>
   );

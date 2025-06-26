@@ -36,7 +36,7 @@ const formSchema = z.object({
 
 export function WalletTopUpForm() {
   const { toast } = useToast();
-  const { addTransaction, balance, setBalance } = useAppStore();
+  const { addTransaction, currentUser, setAuthDialogOpen } = useAppStore();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -57,20 +57,24 @@ export function WalletTopUpForm() {
   };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const newBalance = balance + values.amount;
-    setBalance(newBalance);
+    if (!currentUser) {
+        toast({ title: "Login Required", description: "You must be logged in to request a top-up.", variant: "destructive" });
+        setAuthDialogOpen(true);
+        return;
+    }
 
     addTransaction({
         id: `TXN-${Date.now()}`,
         date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
-        description: `Wallet Top-up via ${values.paymentMethod}`,
+        description: `Wallet Top-up via ${values.paymentMethod} (TrxID: ${values.transactionId})`,
         amount: values.amount,
-        status: 'Completed'
+        status: 'Pending',
+        userId: currentUser.uid,
     });
     
     toast({
-      title: "Top-up Successful",
-      description: `৳${values.amount.toFixed(2)} has been added to your main balance.`,
+      title: "Request Submitted",
+      description: `Your top-up request of ৳${values.amount.toFixed(2)} is pending approval.`,
     });
 
     router.push('/wallet');
