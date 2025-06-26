@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
@@ -159,6 +158,9 @@ export function AuthDialog({ open, onOpenChange }: { open: boolean; onOpenChange
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md p-0">
+                <DialogTitle className="sr-only">
+                  {activeTab === 'login' ? 'Login' : 'Sign Up'}
+                </DialogTitle>
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 rounded-t-lg rounded-b-none">
                         <TabsTrigger value="login">Login</TabsTrigger>
