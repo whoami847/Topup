@@ -138,8 +138,22 @@ export const useAppStore = create<AppState>()(
       registerUser: async ({ email, password }) => {
         if (!password) return { success: false, message: "Password is required." };
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
-            return { success: true, message: "Registration successful! You can now log in." };
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            
+            // Manually add the new user to the users list to ensure it's available immediately
+            if (user) {
+                const newUser: User = { uid: user.uid, email: user.email };
+                set(state => {
+                    // Avoid duplicates if onAuthStateChanged runs first
+                    if (!state.users.some(u => u.uid === newUser.uid)) {
+                        return { users: [...state.users, newUser] };
+                    }
+                    return {};
+                });
+            }
+
+            return { success: true, message: "Registration successful! You are now logged in." };
         } catch (error: any) {
             let message = "An unknown error occurred during registration.";
             if (error.code === 'auth/email-already-in-use') {

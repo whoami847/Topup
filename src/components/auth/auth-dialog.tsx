@@ -151,10 +151,6 @@ export function AuthDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         onOpenChange(false);
     };
 
-    const switchToLoginTab = () => {
-        setActiveTab('login');
-    }
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md p-0">
@@ -185,7 +181,7 @@ export function AuthDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                                     <CardDescription>It's quick and easy to get started.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <RegisterForm onRegisterSuccess={switchToLoginTab} />
+                                    <RegisterForm onRegisterSuccess={handleSuccess} />
                                 </CardContent>
                             </Card>
                         </TabsContent>
