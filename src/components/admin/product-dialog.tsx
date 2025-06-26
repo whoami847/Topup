@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PlusCircle, Trash2 } from 'lucide-react';
 
 const formFieldsOptions: { id: FormFieldType; label: string }[] = [
     { id: 'player_id', label: 'Player ID' },
@@ -90,11 +89,6 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
       categoryId: '',
       products: [],
     },
-  });
-  
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "products",
   });
 
   React.useEffect(() => {
@@ -258,61 +252,6 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
                     </FormItem>
                   )}
                 />
-
-                <Separator />
-
-                <div>
-                  <FormLabel className="text-base">Price Points</FormLabel>
-                  <FormDescription>Add the different options and prices for this product.</FormDescription>
-                  <div className="space-y-3 pt-4">
-                    <div className="grid grid-cols-[1fr_100px_auto] gap-2 items-start">
-                        <FormLabel>Name</FormLabel>
-                        <FormLabel>Price (৳)</FormLabel>
-                    </div>
-                    {fields.map((field, index) => (
-                      <div key={field.id} className="grid grid-cols-[1fr_100px_auto] gap-2 items-start">
-                        <FormField
-                          control={form.control}
-                          name={`products.${index}.name`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl><Input placeholder="e.g., 25 Diamond" {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`products.${index}.price`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl><Input type="number" placeholder="e.g., 22" {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => remove(index)}
-                          className="shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Remove</span>
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => append({ id: `new-${Date.now()}`, name: '', price: 0 })}
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Price Point
-                    </Button>
-                  </div>
-                </div>
 
               </div>
             </ScrollArea>
