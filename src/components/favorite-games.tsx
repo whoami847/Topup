@@ -34,7 +34,7 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
   const subCategories = getSubCategories();
 
   return (
-    <section className="py-16 md:py-24 bg-background">
+    <section className="py-8 md:py-12 bg-background">
       <div className="container">
         <div className="flex items-center justify-center mb-12 relative">
           {selectedCategory && (
