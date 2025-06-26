@@ -22,6 +22,9 @@ export default function WalletPage() {
   }, []);
 
   const balance = store.balance;
+  const pendingBalance = store.transactions
+    .filter((t) => t.status === 'Pending' && t.amount > 0)
+    .reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <div className="container py-8 md:py-12">
@@ -59,6 +62,16 @@ export default function WalletPage() {
           <CardContent>
             <div className="text-4xl font-bold text-green-500">{isClient ? `৳${balance.toFixed(2)}` : '৳0.00'}</div>
             <p className="text-sm text-muted-foreground mt-1">This is your current available balance for purchases.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-secondary/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold text-yellow-500">Pending Balance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-yellow-500">{isClient ? `৳${pendingBalance.toFixed(2)}` : '৳0.00'}</div>
+            <p className="text-sm text-muted-foreground mt-1">This is the amount from top-up requests that are pending approval.</p>
           </CardContent>
         </Card>
       </div>
