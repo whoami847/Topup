@@ -2,13 +2,14 @@
 'use client';
 
 import { useAppStore } from '@/lib/store';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { TopUpForm } from '@/components/top-up-form';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function TopUpPage({ params }: { params: { id: string } }) {
+export default function TopUpPage() {
+  const params = useParams<{ id: string }>();
   const { topUpCategories } = useAppStore();
   const category = topUpCategories.find((c) => c.slug === params.id);
 
