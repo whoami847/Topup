@@ -26,13 +26,10 @@ import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/lib/store';
 import type { MainCategory } from '@/lib/products';
 import { useToast } from '@/hooks/use-toast';
-import { Textarea } from '../ui/textarea';
 
 const categorySchema = z.object({
   title: z.string().min(1, 'Title is required.'),
   imageUrl: z.string().url('Must be a valid URL.'),
-  imageHint: z.string().min(1, 'Image hint is required.'),
-  subCategorySlugs: z.string().min(1, 'At least one sub-category slug is required.'),
 });
 
 type CategoryFormValues = z.infer<typeof categorySchema>;
@@ -53,41 +50,42 @@ export function CategoryDialog({ isOpen, onOpenChange, category, onSuccess }: Ca
     defaultValues: {
       title: '',
       imageUrl: '',
-      imageHint: '',
-      subCategorySlugs: '',
     },
   });
 
   React.useEffect(() => {
-    if (category) {
-      form.reset({
-        title: category.title,
-        imageUrl: category.imageUrl,
-        imageHint: category.imageHint,
-        subCategorySlugs: category.subCategorySlugs.join(', '),
-      });
-    } else {
-      form.reset({
-        title: '',
-        imageUrl: 'https://placehold.co/400x400.png',
-        imageHint: '',
-        subCategorySlugs: '',
-      });
+    if (isOpen) {
+        if (category) {
+        form.reset({
+            title: category.title,
+            imageUrl: category.imageUrl,
+        });
+        } else {
+        form.reset({
+            title: '',
+            imageUrl: 'https://placehold.co/400x400.png',
+        });
+        }
     }
   }, [category, form, isOpen]);
 
   const onSubmit = (data: CategoryFormValues) => {
-    const processedData = {
-        ...data,
-        subCategorySlugs: data.subCategorySlugs.split(',').map(s => s.trim()).filter(Boolean),
-    };
-
     try {
       if (category) {
-        updateMainCategory(category.id, processedData);
+        // Only update fields present in the form
+        updateMainCategory(category.id, {
+            title: data.title,
+            imageUrl: data.imageUrl,
+        });
         toast({ title: 'Success', description: 'Category updated successfully.' });
       } else {
-        addMainCategory(processedData);
+        // For new categories, build the full object
+        const newCategoryData: Omit<MainCategory, 'id'> = {
+            ...data,
+            imageHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
+            subCategorySlugs: []
+        };
+        addMainCategory(newCategoryData);
         toast({ title: 'Success', description: 'Category created successfully.' });
       }
       onSuccess();
@@ -129,33 +127,6 @@ export function CategoryDialog({ isOpen, onOpenChange, category, onSuccess }: Ca
                   <FormControl>
                     <Input placeholder="https://placehold.co/400x400.png" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="imageHint"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image Hint</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., free fire character" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="subCategorySlugs"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sub-Category Slugs</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="slug-one, slug-two, slug-three" {...field} />
-                  </FormControl>
-                  <p className="text-sm text-muted-foreground">Enter slugs separated by commas.</p>
                   <FormMessage />
                 </FormItem>
               )}
