@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from "react";
@@ -12,19 +13,40 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TransactionList } from "@/components/transaction-list";
 import { Plus, List, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { LoginRequired } from '@/components/auth/login-required';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const PageSkeleton = () => (
+  <div className="container py-8 md:py-12">
+    <Skeleton className="h-10 w-48 mb-8" />
+    <div className="max-w-2xl mx-auto space-y-6">
+      <Skeleton className="h-16 w-full rounded-lg" />
+      <Skeleton className="h-16 w-full rounded-lg" />
+      <Skeleton className="h-28 w-full rounded-lg" />
+      <Skeleton className="h-28 w-full rounded-lg" />
+    </div>
+  </div>
+);
+
 
 export default function WalletPage() {
-  const store = useAppStore();
-  const [isClient, setIsClient] = React.useState(false);
+  const { balance, transactions, currentUser, isAuthLoading } = useAppStore();
 
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const balance = store.balance;
-  const pendingBalance = store.transactions
+  const pendingBalance = transactions
     .filter((t) => t.status === 'Pending' && t.amount > 0)
     .reduce((sum, t) => sum + t.amount, 0);
+
+  if (isAuthLoading) {
+    return <PageSkeleton />;
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="container py-8 md:py-12">
+        <LoginRequired message="Access Your Wallet" />
+      </div>
+    );
+  }
 
   return (
     <div className="container py-8 md:py-12">
@@ -60,7 +82,7 @@ export default function WalletPage() {
             <CardTitle className="text-lg font-semibold text-green-500">Main Balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-green-500">{isClient ? `৳${balance.toFixed(2)}` : '৳0.00'}</div>
+            <div className="text-4xl font-bold text-green-500">৳{balance.toFixed(2)}</div>
             <p className="text-sm text-muted-foreground mt-1">This is your current available balance for purchases.</p>
           </CardContent>
         </Card>
@@ -70,7 +92,7 @@ export default function WalletPage() {
             <CardTitle className="text-lg font-semibold text-yellow-500">Pending Balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-yellow-500">{isClient ? `৳${pendingBalance.toFixed(2)}` : '৳0.00'}</div>
+            <div className="text-4xl font-bold text-yellow-500">৳{pendingBalance.toFixed(2)}</div>
             <p className="text-sm text-muted-foreground mt-1">This is the amount from top-up requests that are pending approval.</p>
           </CardContent>
         </Card>
