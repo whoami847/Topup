@@ -36,6 +36,7 @@ import { Eye, EyeOff } from "lucide-react";
 const getValidationSchema = (category: TopUpCategory) => {
   let schemaObject: any = {
     productId: z.string({ required_error: "Please select an option." }),
+    quantity: z.number().min(1).max(99),
   };
 
   if (category.formFields.includes("player_id")) {
@@ -61,9 +62,6 @@ const getValidationSchema = (category: TopUpCategory) => {
   }
   if (category.formFields.includes("two_step_code")) {
     schemaObject.two_step_code = z.string().optional();
-  }
-  if (category.formFields.includes("quantity")) {
-    schemaObject.quantity = z.number().min(1).max(99);
   }
 
   return z.object(schemaObject);
@@ -102,12 +100,11 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
   useEffect(() => {
     const selectedProduct = category.products.find(p => p.id === selectedProductId);
     if (selectedProduct) {
-      const q = category.formFields.includes("quantity") ? quantity : 1;
-      setTotalPrice(selectedProduct.price * q);
+      setTotalPrice(selectedProduct.price * quantity);
     } else {
       setTotalPrice(0);
     }
-  }, [selectedProductId, quantity, category, category.products, category.formFields]);
+  }, [selectedProductId, quantity, category.products]);
   
   async function onSubmit(values: z.infer<typeof validationSchema>) {
     const selectedProduct = category.products.find(p => p.id === values.productId);
@@ -137,7 +134,7 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
     }
 
     const currentDate = format(new Date(), 'dd/MM/yyyy, HH:mm:ss');
-    const orderDescription = `${selectedProduct.name} - ${category.title}`;
+    const orderDescription = `${values.quantity} x ${selectedProduct.name} - ${category.title}`;
 
     try {
         await addOrder({
@@ -149,14 +146,14 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
 
         await addTransaction({
             date: currentDate,
-            description: `Purchase: ${selectedProduct.name}`,
+            description: `Purchase: ${orderDescription}`,
             amount: -totalPrice,
             status: "Completed"
         });
 
         toast({
           title: "Order Submitted!",
-          description: `Your order for ${selectedProduct.name} has been submitted for review.`,
+          description: `Your order for ${orderDescription} has been submitted for review.`,
         });
 
         form.reset(defaultFormValues);
@@ -276,22 +273,6 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
                 </FormItem>
             )} />
         );
-      case "quantity":
-        return (
-          <FormField
-            control={form.control}
-            name="quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>QUANTITY *</FormLabel>
-                <FormControl>
-                    <QuantityInput value={field.value} onChange={field.onChange} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
       default:
         return null;
     }
@@ -334,6 +315,19 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
         />
         
         <div className="space-y-4">
+            <FormField
+                control={form.control}
+                name="quantity"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>QUANTITY *</FormLabel>
+                    <FormControl>
+                        <QuantityInput value={field.value} onChange={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
             {category.formFields.map((fieldName) => (
                 <React.Fragment key={fieldName}>
                     {renderField(fieldName)}
