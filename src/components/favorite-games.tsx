@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 
@@ -69,13 +69,11 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint={category.imageHint}
                       />
-                      <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/70 via-black/30 to-transparent">
-                          <h3 className="font-semibold text-center p-4 truncate text-lg text-primary-foreground">
-                              {category.title}
-                          </h3>
-                      </div>
                     </div>
                   </CardContent>
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-center text-lg">{category.title}</CardTitle>
+                  </CardHeader>
                 </Card>
               </div>
             ))}
@@ -85,7 +83,7 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
             {subCategories.map((category) => (
               <Link href={`/top-up/${category.slug}`} key={category.id} className="group block">
                 <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80">
-                  <CardContent className="p-0">
+                   <CardContent className="p-0">
                     <div className="aspect-square relative">
                       <Image
                         src={category.imageUrl}
@@ -94,11 +92,11 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint={category.imageHint}
                       />
-                       <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/70 via-black/30 to-transparent">
-                          <h3 className="font-semibold text-center p-3 sm:p-4 truncate text-sm sm:text-base text-primary-foreground">{category.title}</h3>
-                      </div>
                     </div>
                   </CardContent>
+                  <CardHeader className="p-3 sm:p-4">
+                    <CardTitle className="text-center text-sm sm:text-base truncate">{category.title}</CardTitle>
+                  </CardHeader>
                 </Card>
               </Link>
             ))}
