@@ -59,7 +59,7 @@ export function WalletTopUpForm() {
         return;
     }
     try {
-        const selectedMethod = paymentMethods.find(m => m.id === values.paymentMethod);
+        const selectedMethod = (paymentMethods || []).find(m => m.id === values.paymentMethod);
         if (!selectedMethod) {
             toast({ title: "Error", description: "Invalid payment method selected.", variant: "destructive" });
             return;
@@ -83,7 +83,7 @@ export function WalletTopUpForm() {
     }
   }
 
-  const enabledPaymentMethods = paymentMethods.filter(m => m.enabled);
+  const enabledPaymentMethods = (paymentMethods || []).filter(m => m.enabled);
 
   return (
     <Form {...form}>
