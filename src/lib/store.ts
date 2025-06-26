@@ -11,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { auth } from './firebase';
 import { initialMainCategories, initialTopUpCategories } from './product-data';
-import type { MainCategory, TopUpCategory } from './products';
+import type { MainCategory, TopUpCategory, Product } from './products';
 
 
 export type Order = {
@@ -68,6 +68,9 @@ type AppState = {
   addTopUpCategory: (category: Omit<TopUpCategory, 'id'>, mainCategoryId: string) => void;
   updateTopUpCategory: (id: string, category: Partial<Omit<TopUpCategory, 'id'>>, newMainCategoryId: string) => void;
   deleteTopUpCategory: (id: string) => void;
+  addPricePoint: (topUpCategoryId: string, newProduct: Omit<Product, 'id'>) => void;
+  updatePricePoint: (topUpCategoryId: string, productId: string, updatedProduct: Partial<Omit<Product, 'id'>>) => void;
+  deletePricePoint: (topUpCategoryId: string, productId: string) => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -254,6 +257,48 @@ export const useAppStore = create<AppState>()(
       deleteTopUpCategory: (id) => {
         set((state) => ({
           topUpCategories: state.topUpCategories.filter((cat) => cat.id !== id),
+        }));
+      },
+
+      addPricePoint: (topUpCategoryId, newProduct) => {
+        set((state) => ({
+          topUpCategories: state.topUpCategories.map((category) => {
+            if (category.id === topUpCategoryId) {
+              const newProductWithId = { ...newProduct, id: `prod-item-${Date.now()}` };
+              return { ...category, products: [...category.products, newProductWithId] };
+            }
+            return category;
+          }),
+        }));
+      },
+
+      updatePricePoint: (topUpCategoryId, productId, updatedProduct) => {
+        set((state) => ({
+          topUpCategories: state.topUpCategories.map((category) => {
+            if (category.id === topUpCategoryId) {
+              return {
+                ...category,
+                products: category.products.map((p) =>
+                  p.id === productId ? { ...p, ...updatedProduct } : p
+                ),
+              };
+            }
+            return category;
+          }),
+        }));
+      },
+
+      deletePricePoint: (topUpCategoryId, productId) => {
+        set((state) => ({
+          topUpCategories: state.topUpCategories.map((category) => {
+            if (category.id === topUpCategoryId) {
+              return {
+                ...category,
+                products: category.products.filter((p) => p.id !== productId),
+              };
+            }
+            return category;
+          }),
         }));
       },
 
