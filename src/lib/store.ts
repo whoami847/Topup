@@ -65,6 +65,9 @@ type AppState = {
   addMainCategory: (category: Omit<MainCategory, 'id'>) => void;
   updateMainCategory: (id: string, category: Partial<Omit<MainCategory, 'id'>>) => void;
   deleteMainCategory: (id: string) => void;
+  addTopUpCategory: (category: Omit<TopUpCategory, 'id'>) => void;
+  updateTopUpCategory: (id: string, category: Partial<Omit<TopUpCategory, 'id'>>) => void;
+  deleteTopUpCategory: (id: string) => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -185,6 +188,30 @@ export const useAppStore = create<AppState>()(
       deleteMainCategory: (id) => {
         set((state) => ({
           mainCategories: state.mainCategories.filter((cat) => cat.id !== id),
+        }));
+      },
+
+      addTopUpCategory: (category) => {
+        const newCategory: TopUpCategory = {
+          ...category,
+          id: `prod-cat-${Date.now()}`,
+        };
+        set((state) => ({
+          topUpCategories: [...state.topUpCategories, newCategory],
+        }));
+      },
+
+      updateTopUpCategory: (id, updatedData) => {
+        set((state) => ({
+          topUpCategories: state.topUpCategories.map((cat) =>
+            cat.id === id ? { ...cat, ...updatedData } : cat
+          ),
+        }));
+      },
+
+      deleteTopUpCategory: (id) => {
+        set((state) => ({
+          topUpCategories: state.topUpCategories.filter((cat) => cat.id !== id),
         }));
       },
 
