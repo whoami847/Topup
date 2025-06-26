@@ -34,9 +34,9 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
   const subCategories = getSubCategories();
 
   return (
-    <section className="py-8 md:py-12 bg-background">
+    <section className="py-6 md:py-8 bg-background">
       <div className="container">
-        <div className="flex items-center justify-center mb-12 relative">
+        <div className="flex items-center justify-center mb-8 md:mb-12 relative">
           {selectedCategory && (
             <div className="absolute left-0">
                 <Button variant="ghost" onClick={handleBackClick}>
@@ -52,7 +52,7 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
         </div>
 
         {!selectedCategory ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 animate-in fade-in-50 duration-500">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 animate-in fade-in-50 duration-500">
             {mainCategories.map((category) => (
               <div
                 key={category.id}
@@ -61,7 +61,7 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
               >
                 <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80 bg-secondary">
                   <CardContent className="p-0">
-                    <div className="aspect-[3/4] relative">
+                    <div className="aspect-square relative">
                       <Image
                         src={category.imageUrl}
                         alt={category.title}
@@ -79,12 +79,12 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-in fade-in-20 slide-in-from-left-12 duration-500">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 animate-in fade-in-20 slide-in-from-left-12 duration-500">
             {subCategories.map((category) => (
               <Link href={`/top-up/${category.slug}`} key={category.id} className="group block">
                 <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80 bg-secondary">
                   <CardContent className="p-0">
-                    <div className="aspect-[3/4] relative">
+                    <div className="aspect-square relative">
                       <Image
                         src={category.imageUrl}
                         alt={category.title}
