@@ -49,6 +49,7 @@ type AppState = {
   isAuthDialogOpen: boolean;
   setBalance: (newBalance: number) => void;
   addOrder: (order: Order) => void;
+  updateOrderStatus: (orderId: string, status: Order['status']) => void;
   addTransaction: (transaction: Transaction) => void;
   registerUser: (credentials: Credentials) => Promise<{ success: boolean; message: string }>;
   loginUser: (credentials: Credentials) => Promise<{ success: boolean; message: string }>;
@@ -69,6 +70,12 @@ export const useAppStore = create<AppState>()(
       isAuthDialogOpen: false,
       setBalance: (newBalance) => set({ balance: newBalance }),
       addOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
+      updateOrderStatus: (orderId, status) =>
+        set((state) => ({
+          orders: state.orders.map((order) =>
+            order.id === orderId ? { ...order, status } : order
+          ),
+        })),
       addTransaction: (transaction) => set((state) => ({ transactions: [transaction, ...state.transactions] })),
       
       _setCurrentUser: (user) => {
@@ -78,13 +85,12 @@ export const useAppStore = create<AppState>()(
             const userExists = state.users.some((u) => u.uid === user.uid);
             if (userExists) {
               return { currentUser: newUser, isAuthLoading: false };
-            } else {
-              return {
-                currentUser: newUser,
-                isAuthLoading: false,
-                users: [...state.users, newUser],
-              };
             }
+            return {
+              currentUser: newUser,
+              isAuthLoading: false,
+              users: [...state.users, newUser],
+            };
           });
         } else {
           set({ currentUser: null, isAuthLoading: false });

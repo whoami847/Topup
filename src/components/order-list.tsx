@@ -16,8 +16,8 @@ const statusConfig = {
     },
     Pending: {
       variant: "outline" as const,
-      className: "bg-gray-300 text-gray-900 dark:bg-gray-600 dark:text-gray-200 border-transparent",
-      text: "Processing",
+      className: "bg-yellow-500 text-white border-transparent hover:bg-yellow-600",
+      text: "Pending",
     },
     Failed: {
       variant: "destructive" as const,

@@ -72,7 +72,7 @@ const getValidationSchema = (category: TopUpCategory) => {
 export function TopUpForm({ category }: { category: TopUpCategory }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { balance, setBalance, addOrder, addTransaction, currentUser } = useAppStore();
+  const { balance, setBalance, addOrder, addTransaction, currentUser, setAuthDialogOpen } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
@@ -119,6 +119,12 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
         });
         return;
     }
+
+    if (!currentUser) {
+      toast({ title: "Login Required", description: "You must be logged in to place an order.", variant: "destructive" });
+      setAuthDialogOpen(true);
+      return;
+    }
     
     if (balance < totalPrice) {
         toast({
@@ -143,8 +149,8 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
         date: currentDate,
         description: orderDescription,
         amount: totalPrice,
-        status: "Completed",
-        userId: currentUser ? currentUser.uid : "guest",
+        status: "Pending",
+        userId: currentUser.uid,
     });
 
     addTransaction({
@@ -156,8 +162,8 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
     });
 
     toast({
-      title: "Order Placed!",
-      description: `Your order for ${selectedProduct.name} has been submitted successfully.`,
+      title: "Order Submitted!",
+      description: `Your order for ${selectedProduct.name} has been submitted for review.`,
     });
 
     form.reset(defaultFormValues);

@@ -19,7 +19,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import { Package } from 'lucide-react';
+import { MoreHorizontal, Package } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const statusConfig = {
     Completed: {
@@ -29,7 +36,7 @@ const statusConfig = {
     },
     Pending: {
       variant: "outline" as const,
-      className: "bg-yellow-500 text-white border-transparent",
+      className: "bg-yellow-500 text-white border-transparent hover:bg-yellow-600",
       text: "Pending",
     },
     Failed: {
@@ -40,7 +47,7 @@ const statusConfig = {
 };
 
 export default function AdminOrdersPage() {
-  const { orders } = useAppStore();
+  const { orders, updateOrderStatus } = useAppStore();
 
   return (
     <Card>
@@ -58,6 +65,7 @@ export default function AdminOrdersPage() {
                     <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -74,6 +82,27 @@ export default function AdminOrdersPage() {
                             </Badge>
                             </TableCell>
                             <TableCell className="text-right">৳{order.amount.toFixed(2)}</TableCell>
+                             <TableCell className="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Actions</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Completed')}>
+                                            Mark as Completed
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Failed')}>
+                                            Mark as Failed
+                                        </DropdownMenuItem>
+                                         <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Pending')}>
+                                            Mark as Pending
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
                         </TableRow>
                         );
                     })}
