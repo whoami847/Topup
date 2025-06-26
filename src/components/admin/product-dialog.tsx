@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -25,12 +25,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/lib/store';
-import type { TopUpCategory, FormFieldType, Product } from '@/lib/products';
+import type { TopUpCategory, FormFieldType } from '@/lib/products';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import { Checkbox } from '../ui/checkbox';
 import { Separator } from '../ui/separator';
-import { PlusCircle, X } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 
 const formFieldsOptions: { id: FormFieldType; label: string }[] = [
@@ -50,12 +49,6 @@ const productSchema = z.object({
   formFields: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: 'You have to select at least one form field.',
   }),
-  products: z.array(
-    z.object({
-      name: z.string().min(1, 'Price point name is required.'),
-      price: z.coerce.number().min(0, 'Price must be a positive number.'),
-    })
-  ).min(1, 'At least one price point is required.'),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -78,13 +71,7 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
       imageUrl: '',
       description: '',
       formFields: [],
-      products: [],
     },
-  });
-  
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: 'products',
   });
 
   React.useEffect(() => {
@@ -94,7 +81,6 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
         imageUrl: product.imageUrl,
         description: product.description.join('\n'),
         formFields: product.formFields,
-        products: product.products.map(p => ({ name: p.name, price: p.price }))
       });
     } else {
       form.reset({
@@ -102,7 +88,6 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
         imageUrl: 'https://placehold.co/400x400.png',
         description: '',
         formFields: [],
-        products: [{ name: '', price: 0 }],
       });
     }
   }, [product, form, isOpen]);
@@ -125,7 +110,6 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
         pageTitle: data.title.toUpperCase(),
         imageHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
         description: data.description ? data.description.split('\n').filter(Boolean) : [],
-        products: data.products.map((p, index) => ({...p, id: product?.products[index]?.id || `${slug}_${index + 1}`}))
     };
     
     try {
@@ -133,7 +117,11 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
         updateTopUpCategory(product.id, processedData);
         toast({ title: 'Success', description: 'Product updated successfully.' });
       } else {
-        addTopUpCategory(processedData as Omit<TopUpCategory, 'id'>);
+        const dataForNewProduct = {
+            ...processedData,
+            products: [],
+        };
+        addTopUpCategory(dataForNewProduct as Omit<TopUpCategory, 'id'>);
         toast({ title: 'Success', description: 'Product created successfully.' });
       }
       onSuccess();
@@ -215,58 +203,6 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
                     </FormItem>
                   )}
                 />
-
-                <Separator />
-                
-                <div>
-                    <FormLabel className="text-base">Price Points</FormLabel>
-                    <FormDescription>Add the different options and prices for this product.</FormDescription>
-                    <div className="space-y-4 pt-4">
-                        {fields.map((field, index) => (
-                            <div key={field.id} className="flex items-end gap-4 p-4 border rounded-lg">
-                                <FormField
-                                    control={form.control}
-                                    name={`products.${index}.name`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex-1">
-                                            <FormLabel>Name</FormLabel>
-                                            <FormControl><Input placeholder="e.g., 25 Diamond" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                 <FormField
-                                    control={form.control}
-                                    name={`products.${index}.price`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Price (৳)</FormLabel>
-                                            <FormControl><Input type="number" placeholder="e.g., 22" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => append({ name: '', price: 0 })}
-                        >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Price Point
-                        </Button>
-                    </div>
-                     <FormField
-                        control={form.control}
-                        name="products"
-                        render={() => (<FormMessage className="mt-2" />)}
-                      />
-                </div>
               </div>
             </ScrollArea>
             <DialogFooter className="pt-8">
