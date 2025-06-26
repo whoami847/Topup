@@ -59,7 +59,7 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
                 className="group block cursor-pointer"
                 onClick={() => handleCategoryClick(category.id)}
               >
-                <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80 bg-secondary">
+                <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80">
                   <CardContent className="p-0">
                     <div className="aspect-square relative">
                       <Image
@@ -69,10 +69,12 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint={category.imageHint}
                       />
+                      <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/70 via-black/30 to-transparent">
+                          <h3 className="font-semibold text-center p-4 truncate text-lg text-primary-foreground">
+                              {category.title}
+                          </h3>
+                      </div>
                     </div>
-                    <h3 className="font-semibold text-center p-4 truncate text-lg">
-                      {category.title}
-                    </h3>
                   </CardContent>
                 </Card>
               </div>
@@ -82,7 +84,7 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 animate-in fade-in-20 slide-in-from-left-12 duration-500">
             {subCategories.map((category) => (
               <Link href={`/top-up/${category.slug}`} key={category.id} className="group block">
-                <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80 bg-secondary">
+                <Card className="overflow-hidden transition-all duration-300 hover:shadow-primary/40 hover:shadow-lg hover:-translate-y-2 border-2 border-transparent hover:border-primary/80">
                   <CardContent className="p-0">
                     <div className="aspect-square relative">
                       <Image
@@ -92,8 +94,10 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint={category.imageHint}
                       />
+                       <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/70 via-black/30 to-transparent">
+                          <h3 className="font-semibold text-center p-3 sm:p-4 truncate text-sm sm:text-base text-primary-foreground">{category.title}</h3>
+                      </div>
                     </div>
-                    <h3 className="font-semibold text-center p-3 sm:p-4 truncate text-sm sm:text-base">{category.title}</h3>
                   </CardContent>
                 </Card>
               </Link>
