@@ -45,10 +45,7 @@ const formFieldsOptions: { id: FormFieldType; label: string }[] = [
 
 const productSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
-  slug: z.string().min(1, 'Slug is required.'),
-  pageTitle: z.string().min(1, 'Page Title is required.'),
   imageUrl: z.string().url('Must be a valid URL.'),
-  imageHint: z.string().min(1, 'Image hint is required.'),
   description: z.string().optional(),
   formFields: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: 'You have to select at least one form field.',
@@ -78,10 +75,7 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
     resolver: zodResolver(productSchema),
     defaultValues: {
       title: '',
-      slug: '',
-      pageTitle: '',
       imageUrl: '',
-      imageHint: '',
       description: '',
       formFields: [],
       products: [],
@@ -96,18 +90,16 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
   React.useEffect(() => {
     if (product) {
       form.reset({
-        ...product,
+        title: product.title,
+        imageUrl: product.imageUrl,
         description: product.description.join('\n'),
-        // Ensure products have the correct structure for the form
+        formFields: product.formFields,
         products: product.products.map(p => ({ name: p.name, price: p.price }))
       });
     } else {
       form.reset({
         title: '',
-        slug: '',
-        pageTitle: '',
         imageUrl: 'https://placehold.co/400x400.png',
-        imageHint: '',
         description: '',
         formFields: [],
         products: [{ name: '', price: 0 }],
@@ -116,10 +108,24 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
   }, [product, form, isOpen]);
 
   const onSubmit = (data: ProductFormValues) => {
+    const generateSlug = (title: string) => {
+        return title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .trim()
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+    };
+
+    const slug = generateSlug(data.title);
+
     const processedData = {
         ...data,
+        slug: slug,
+        pageTitle: data.title.toUpperCase(),
+        imageHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
         description: data.description ? data.description.split('\n').filter(Boolean) : [],
-        products: data.products.map((p, index) => ({...p, id: product?.products[index]?.id || `${data.slug}_${index + 1}`}))
+        products: data.products.map((p, index) => ({...p, id: product?.products[index]?.id || `${slug}_${index + 1}`}))
     };
     
     try {
@@ -150,45 +156,20 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <ScrollArea className="h-[60vh] pr-6">
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="title" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Title</FormLabel>
-                            <FormControl><Input placeholder="e.g., DIAMOND TOP UP [BD]" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name="slug" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Slug</FormLabel>
-                            <FormControl><Input placeholder="e.g., diamond-top-up-bd" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                </div>
-                 <FormField control={form.control} name="pageTitle" render={({ field }) => (
+                <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Page Title</FormLabel>
-                        <FormControl><Input placeholder="e.g., FREE FIRE TOPUP BD" {...field} /></FormControl>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl><Input placeholder="e.g., DIAMOND TOP UP [BD]" {...field} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Image URL</FormLabel>
-                            <FormControl><Input placeholder="https://placehold.co/400x400.png" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name="imageHint" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Image Hint</FormLabel>
-                            <FormControl><Input placeholder="e.g., diamond topup" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                </div>
+                <FormField control={form.control} name="imageUrl" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Image URL</FormLabel>
+                        <FormControl><Input placeholder="https://placehold.co/400x400.png" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
                 <FormField control={form.control} name="description" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Description</FormLabel>
@@ -302,4 +283,3 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
     </Dialog>
   );
 }
-
