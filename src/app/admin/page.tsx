@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -43,7 +44,7 @@ const QuickNavCard = ({ href, icon: Icon, label }) => (
 
 
 export default function AdminDashboardPage() {
-    const { orders } = useAppStore();
+    const { orders, users } = useAppStore();
     const [isClient, setIsClient] = React.useState(false);
     
     React.useEffect(() => {
@@ -61,11 +62,12 @@ export default function AdminDashboardPage() {
         { href: '/admin/settings', label: 'Settings', icon: Settings },
     ];
 
-    const { totalRevenue, totalOrders, weeklySalesData } = React.useMemo(() => {
-        if (!isClient) return { totalRevenue: 0, totalOrders: 0, weeklySalesData: [] };
+    const { totalRevenue, totalOrders, weeklySalesData, totalUsers } = React.useMemo(() => {
+        if (!isClient) return { totalRevenue: 0, totalOrders: 0, weeklySalesData: [], totalUsers: 0 };
 
         const totalRevenue = orders.reduce((sum, order) => sum + order.amount, 0);
         const totalOrders = orders.length;
+        const totalUsers = users.length;
 
         const weeklySalesData = Array.from({ length: 7 }, (_, i) => {
             const date = subDays(new Date(), i);
@@ -92,8 +94,8 @@ export default function AdminDashboardPage() {
             }
         });
 
-        return { totalRevenue, totalOrders, weeklySalesData };
-    }, [orders, isClient]);
+        return { totalRevenue, totalOrders, weeklySalesData, totalUsers };
+    }, [orders, users, isClient]);
 
     if (!isClient) {
         return (
@@ -147,10 +149,10 @@ export default function AdminDashboardPage() {
             formatAsCurrency
         />
         <DashboardStatCard 
-            title="New Customers" 
-            value={0} // Placeholder
+            title="Total Users" 
+            value={totalUsers} 
             icon={Users}
-            description="New customers this month"
+            description="Total registered users"
         />
       </div>
       <Card>
