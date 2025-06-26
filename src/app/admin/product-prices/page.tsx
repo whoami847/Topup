@@ -1,4 +1,7 @@
 
+'use client';
+
+import * as React from 'react';
 import {
   Card,
   CardContent,
@@ -14,16 +17,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { topUpCategories } from '@/lib/products';
+import { useAppStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
 
 export default function AdminProductPricesPage() {
-  const allProducts = topUpCategories.flatMap(category => 
-    category.products.map(product => ({
-      ...product,
-      categoryTitle: category.title,
-    }))
-  ).sort((a, b) => b.price - a.price);
+  const { topUpCategories } = useAppStore();
+
+  const allProducts = React.useMemo(() => {
+    return topUpCategories.flatMap(category => 
+      category.products.map(product => ({
+        ...product,
+        categoryTitle: category.title,
+      }))
+    ).sort((a, b) => b.price - a.price);
+  }, [topUpCategories]);
 
   return (
     <Card>

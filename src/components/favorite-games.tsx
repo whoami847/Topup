@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,9 +7,10 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mainCategories, topUpCategories } from "@/lib/products";
+import { useAppStore } from "@/lib/store";
 
 export function TopUpCategories() {
+  const { mainCategories, topUpCategories } = useAppStore();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const handleCategoryClick = (categoryId: string) => {

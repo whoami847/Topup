@@ -1,17 +1,15 @@
-import { topUpCategories } from '@/lib/products';
+
+'use client';
+
+import { useAppStore } from '@/lib/store';
 import { notFound } from 'next/navigation';
 import { TopUpForm } from '@/components/top-up-form';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export function generateStaticParams() {
-  return topUpCategories.map((category) => ({
-    id: category.slug,
-  }));
-}
-
 export default function TopUpPage({ params }: { params: { id: string } }) {
+  const { topUpCategories } = useAppStore();
   const category = topUpCategories.find((c) => c.slug === params.id);
 
   if (!category) {

@@ -10,7 +10,8 @@ import {
     signOut
 } from 'firebase/auth';
 import { auth } from './firebase';
-import { format } from 'date-fns';
+import { initialMainCategories, initialTopUpCategories } from './product-data';
+import type { MainCategory, TopUpCategory } from './products';
 
 
 export type Order = {
@@ -46,6 +47,8 @@ type AppState = {
   orders: Order[];
   transactions: Transaction[];
   users: User[];
+  mainCategories: MainCategory[];
+  topUpCategories: TopUpCategory[];
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthDialogOpen: boolean;
@@ -59,6 +62,9 @@ type AppState = {
   logoutUser: () => Promise<void>;
   setAuthDialogOpen: (open: boolean) => void;
   _setCurrentUser: (user: FirebaseUser | null) => void;
+  addMainCategory: (category: Omit<MainCategory, 'id'>) => void;
+  updateMainCategory: (id: string, category: Partial<Omit<MainCategory, 'id'>>) => void;
+  deleteMainCategory: (id: string) => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -68,9 +74,12 @@ export const useAppStore = create<AppState>()(
       orders: [],
       transactions: [],
       users: [],
+      mainCategories: initialMainCategories,
+      topUpCategories: initialTopUpCategories,
       currentUser: null,
       isAuthLoading: true,
       isAuthDialogOpen: false,
+
       setBalance: (newBalance) => set({ balance: newBalance }),
       addOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
       updateOrderStatus: (orderId, status) =>
@@ -86,16 +95,14 @@ export const useAppStore = create<AppState>()(
           let newBalance = state.balance;
           const originalTransaction = state.transactions.find((t) => t.id === transactionId);
 
-          // Prevent re-processing or acting on non-pending transactions
           if (!originalTransaction || originalTransaction.status !== 'Pending') {
-            return {}; // No change
+            return {}; 
           }
 
           const newTransactions = state.transactions.map((t) =>
             t.id === transactionId ? { ...t, status } : t
           );
 
-          // Only add to balance if it's a 'Completed' top-up (positive amount)
           if (status === 'Completed' && originalTransaction.amount > 0) {
             newBalance += originalTransaction.amount;
           }
@@ -156,6 +163,31 @@ export const useAppStore = create<AppState>()(
       },
 
       setAuthDialogOpen: (open) => set({ isAuthDialogOpen: open }),
+      
+      addMainCategory: (category) => {
+        const newCategory: MainCategory = {
+          ...category,
+          id: `cat-${Date.now()}`,
+        };
+        set((state) => ({
+          mainCategories: [...state.mainCategories, newCategory],
+        }));
+      },
+
+      updateMainCategory: (id, updatedData) => {
+        set((state) => ({
+          mainCategories: state.mainCategories.map((cat) =>
+            cat.id === id ? { ...cat, ...updatedData } : cat
+          ),
+        }));
+      },
+
+      deleteMainCategory: (id) => {
+        set((state) => ({
+          mainCategories: state.mainCategories.filter((cat) => cat.id !== id),
+        }));
+      },
+
     }),
     {
       name: 'burner-store-storage',
