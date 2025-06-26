@@ -34,8 +34,10 @@ export type Order = {
   date: string;
   description: string;
   amount: number;
-  status: 'Completed' | 'Pending' | 'Failed';
+  status: 'COMPLETED' | 'PENDING' | 'FAILED' | 'CANCELLED';
   userId: string;
+  productDetails?: any;
+  paymentDetails?: any;
 };
 
 export type Transaction = {

@@ -19,35 +19,33 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, Package } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Package } from 'lucide-react';
 
 const statusConfig = {
-    Completed: {
+    COMPLETED: {
       variant: "default" as const,
       className: "bg-green-500 text-primary-foreground border-transparent hover:bg-green-600",
       text: "Completed",
     },
-    Pending: {
+    PENDING: {
       variant: "outline" as const,
       className: "bg-yellow-500 text-white border-transparent hover:bg-yellow-600",
       text: "Pending",
     },
-    Failed: {
+    FAILED: {
       variant: "destructive" as const,
       className: "border-transparent",
       text: "Failed",
     },
+    CANCELLED: {
+        variant: "secondary" as const,
+        className: "bg-gray-500 text-secondary-foreground border-transparent",
+        text: "Cancelled",
+    },
 };
 
 export default function AdminOrdersPage() {
-  const { orders, updateOrderStatus } = useAppStore();
+  const { orders } = useAppStore();
 
   return (
     <Card>
@@ -65,15 +63,15 @@ export default function AdminOrdersPage() {
                     <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {orders.map((order) => {
-                        const config = statusConfig[order.status] ?? statusConfig.Pending;
+                        const configKey = order.status.toUpperCase() as keyof typeof statusConfig;
+                        const config = statusConfig[configKey] ?? statusConfig.PENDING;
                         return (
                         <TableRow key={order.id}>
-                            <TableCell className="font-medium">{order.id}</TableCell>
+                            <TableCell className="font-medium truncate max-w-xs">{order.id}</TableCell>
                             <TableCell>{order.date}</TableCell>
                             <TableCell>{order.description}</TableCell>
                             <TableCell>
@@ -82,27 +80,6 @@ export default function AdminOrdersPage() {
                             </Badge>
                             </TableCell>
                             <TableCell className="text-right">৳{order.amount.toFixed(2)}</TableCell>
-                             <TableCell className="text-right">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                            <span className="sr-only">Actions</span>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Completed')}>
-                                            Mark as Completed
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Failed')}>
-                                            Mark as Failed
-                                        </DropdownMenuItem>
-                                         <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Pending')}>
-                                            Mark as Pending
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
                         </TableRow>
                         );
                     })}

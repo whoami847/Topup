@@ -9,23 +9,27 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const statusConfig = {
-    Completed: {
+    COMPLETED: {
       variant: "default" as const,
       className: "bg-green-500 text-primary-foreground border-transparent hover:bg-green-600",
       text: "Completed",
     },
-    Pending: {
+    PENDING: {
       variant: "outline" as const,
       className: "bg-yellow-500 text-white border-transparent hover:bg-yellow-600",
       text: "Pending",
     },
-    Failed: {
+    FAILED: {
       variant: "destructive" as const,
       className: "border-transparent",
       text: "Failed",
     },
+    CANCELLED: {
+        variant: "secondary" as const,
+        className: "bg-gray-500 text-secondary-foreground border-transparent",
+        text: "Cancelled",
+    },
 };
-
 
 export function OrderList({ orders }: { orders: Order[] }) {
   if (orders.length === 0) {
@@ -45,7 +49,8 @@ export function OrderList({ orders }: { orders: Order[] }) {
   return (
     <div className="space-y-4">
       {orders.map((order) => {
-        const config = statusConfig[order.status] ?? statusConfig.Pending;
+        const configKey = order.status.toUpperCase() as keyof typeof statusConfig;
+        const config = statusConfig[configKey] ?? statusConfig.PENDING;
         return (
             <Card key={order.id} className="p-4 shadow-md bg-secondary/30">
                 <div className="flex items-center gap-4">

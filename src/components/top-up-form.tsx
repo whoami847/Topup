@@ -70,8 +70,9 @@ const getValidationSchema = (category: TopUpCategory) => {
 export function TopUpForm({ category }: { category: TopUpCategory }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { balance, addOrder, addTransaction, currentUser, setAuthDialogOpen } = useAppStore();
+  const { currentUser, setAuthDialogOpen } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const validationSchema = useMemo(() => getValidationSchema(category), [category]);
@@ -107,6 +108,15 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
   }, [selectedProductId, quantity, category.products]);
   
   async function onSubmit(values: z.infer<typeof validationSchema>) {
+    setIsSubmitting(true);
+    
+    if (!currentUser) {
+      toast({ title: "Login Required", description: "You must be logged in to place an order.", variant: "destructive" });
+      setAuthDialogOpen(true);
+      setIsSubmitting(false);
+      return;
+    }
+
     const selectedProduct = category.products.find(p => p.id === values.productId);
     if (!selectedProduct) {
         toast({
@@ -114,53 +124,37 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
             description: "Please select a product before purchasing.",
             variant: "destructive"
         });
+        setIsSubmitting(false);
         return;
-    }
-
-    if (!currentUser) {
-      toast({ title: "Login Required", description: "You must be logged in to place an order.", variant: "destructive" });
-      setAuthDialogOpen(true);
-      return;
     }
     
-    if (balance < totalPrice) {
-        toast({
-            title: "Insufficient Balance",
-            description: "Your wallet balance is too low. Please add funds to continue.",
-            variant: "destructive"
-        });
-        router.push('/wallet/top-up');
-        return;
-    }
-
-    const currentDate = format(new Date(), 'dd/MM/yyyy, HH:mm:ss');
-    const orderDescription = `${values.quantity} x ${selectedProduct.name} - ${category.title}`;
+    const orderDetails = {
+        date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
+        description: `${values.quantity} x ${selectedProduct.name} - ${category.title}`,
+        amount: totalPrice,
+        userId: currentUser.uid,
+        productDetails: values, // Includes player_id etc.
+    };
 
     try {
-        await addOrder({
-            date: currentDate,
-            description: orderDescription,
-            amount: totalPrice,
-            status: "Pending",
+        const response = await fetch('/api/payment/initiate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: orderDetails, user: currentUser }),
         });
 
-        await addTransaction({
-            date: currentDate,
-            description: `Purchase: ${orderDescription}`,
-            amount: -totalPrice,
-            status: "Completed"
-        });
+        const data = await response.json();
 
-        toast({
-          title: "Order Submitted!",
-          description: `Your order for ${orderDescription} has been submitted for review.`,
-        });
-
-        form.reset(defaultFormValues);
-        router.push('/orders');
+        if (response.ok && data.url) {
+            window.location.href = data.url; // Redirect to payment gateway
+        } else {
+            toast({ title: "Error", description: data.message || "Failed to initiate payment.", variant: "destructive" });
+            setIsSubmitting(false);
+        }
     } catch(error) {
-        console.error("Order submission failed:", error);
-        toast({ title: "Error", description: "Failed to submit order.", variant: "destructive" });
+        console.error("Payment initiation failed:", error);
+        toast({ title: "Error", description: "Could not connect to the payment server.", variant: "destructive" });
+        setIsSubmitting(false);
     }
   }
 
@@ -342,8 +336,8 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
             <span className="text-2xl font-bold text-primary">৳{totalPrice.toFixed(2)}</span>
         </div>
 
-        <Button type="submit" size="lg" className="w-full text-lg font-bold" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? 'Processing...' : 'Buy Now'}
+        <Button type="submit" size="lg" className="w-full text-lg font-bold" disabled={isSubmitting}>
+          {isSubmitting ? 'Processing...' : 'Proceed to Pay'}
         </Button>
       </form>
     </Form>
