@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Image from 'next/image';
+import { resizeImage } from '@/lib/utils';
 
 const formFieldsOptions: { id: FormFieldType; label: string }[] = [
     { id: 'player_id', label: 'Player ID' },
@@ -228,16 +229,17 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
                           <Input
                             type="file"
                             accept="image/png, image/jpeg, image/webp"
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  const dataUrl = reader.result as string;
-                                  form.setValue('imageUrl', dataUrl, { shouldValidate: true });
-                                  setImagePreview(dataUrl);
-                                };
-                                reader.readAsDataURL(file);
+                                try {
+                                    const dataUrl = await resizeImage(file, 400, 400);
+                                    form.setValue('imageUrl', dataUrl, { shouldValidate: true });
+                                    setImagePreview(dataUrl);
+                                } catch (error) {
+                                    console.error("Image processing failed", error);
+                                    toast({ title: 'Error', description: 'Could not process image. Please try another one.', variant: 'destructive' });
+                                }
                               }
                             }}
                             className="max-w-xs"

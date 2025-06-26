@@ -27,6 +27,7 @@ import { useAppStore } from '@/lib/store';
 import type { MainCategory } from '@/lib/products';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { resizeImage } from '@/lib/utils';
 
 const categorySchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -147,16 +148,17 @@ export function CategoryDialog({ isOpen, onOpenChange, category, onSuccess }: Ca
                       <Input
                         type="file"
                         accept="image/png, image/jpeg, image/webp"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              const dataUrl = reader.result as string;
+                            try {
+                              const dataUrl = await resizeImage(file, 400, 400);
                               form.setValue('imageUrl', dataUrl, { shouldValidate: true });
                               setImagePreview(dataUrl);
-                            };
-                            reader.readAsDataURL(file);
+                            } catch (error) {
+                                console.error("Image processing failed", error);
+                                toast({ title: 'Error', description: 'Could not process image. Please try another one.', variant: 'destructive' });
+                            }
                           }
                         }}
                         className="max-w-xs"
