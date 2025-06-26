@@ -15,8 +15,6 @@ import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { UserNav } from "../auth/user-nav";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import { Skeleton } from "../ui/skeleton";
 
 const navLinks = [
@@ -28,15 +26,11 @@ const navLinks = [
 ];
 
 export function Header() {
-  const { currentUser, isAuthDialogOpen, setAuthDialogOpen, _setCurrentUser, isAuthLoading } = useAppStore();
+  const { currentUser, isAuthDialogOpen, setAuthDialogOpen, isAuthLoading, init } = useAppStore();
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      _setCurrentUser(user);
-    });
-
-    return () => unsubscribe();
-  }, [_setCurrentUser]);
+    init();
+  }, [init]);
 
   return (
     <>

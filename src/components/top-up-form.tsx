@@ -72,7 +72,7 @@ const getValidationSchema = (category: TopUpCategory) => {
 export function TopUpForm({ category }: { category: TopUpCategory }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { balance, setBalance, addOrder, addTransaction, currentUser, setAuthDialogOpen } = useAppStore();
+  const { balance, addOrder, addTransaction, currentUser, setAuthDialogOpen } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
@@ -109,7 +109,7 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
     }
   }, [selectedProductId, quantity, category, category.products, category.formFields]);
   
-  function onSubmit(values: z.infer<typeof validationSchema>) {
+  async function onSubmit(values: z.infer<typeof validationSchema>) {
     const selectedProduct = category.products.find(p => p.id === values.productId);
     if (!selectedProduct) {
         toast({
@@ -136,38 +136,35 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
         return;
     }
 
-    const newBalance = balance - totalPrice;
-    setBalance(newBalance);
-
-    const orderId = `ORD-${Date.now()}`;
-    const transactionId = `TXN-${Date.now()}`;
     const currentDate = format(new Date(), 'dd/MM/yyyy, HH:mm:ss');
     const orderDescription = `${selectedProduct.name} - ${category.title}`;
 
-    addOrder({
-        id: orderId,
-        date: currentDate,
-        description: orderDescription,
-        amount: totalPrice,
-        status: "Pending",
-        userId: currentUser.uid,
-    });
+    try {
+        await addOrder({
+            date: currentDate,
+            description: orderDescription,
+            amount: totalPrice,
+            status: "Pending",
+        });
 
-    addTransaction({
-        id: transactionId,
-        date: currentDate,
-        description: `Purchase: ${selectedProduct.name}`,
-        amount: -totalPrice,
-        status: "Completed"
-    });
+        await addTransaction({
+            date: currentDate,
+            description: `Purchase: ${selectedProduct.name}`,
+            amount: -totalPrice,
+            status: "Completed"
+        });
 
-    toast({
-      title: "Order Submitted!",
-      description: `Your order for ${selectedProduct.name} has been submitted for review.`,
-    });
+        toast({
+          title: "Order Submitted!",
+          description: `Your order for ${selectedProduct.name} has been submitted for review.`,
+        });
 
-    form.reset(defaultFormValues);
-    router.push('/orders');
+        form.reset(defaultFormValues);
+        router.push('/orders');
+    } catch(error) {
+        console.error("Order submission failed:", error);
+        toast({ title: "Error", description: "Failed to submit order.", variant: "destructive" });
+    }
   }
 
   const renderField = (fieldName: string) => {
@@ -351,8 +348,8 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
             <span className="text-2xl font-bold text-primary">৳{totalPrice.toFixed(2)}</span>
         </div>
 
-        <Button type="submit" size="lg" className="w-full text-lg font-bold">
-          Buy Now
+        <Button type="submit" size="lg" className="w-full text-lg font-bold" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? 'Processing...' : 'Buy Now'}
         </Button>
       </form>
     </Form>

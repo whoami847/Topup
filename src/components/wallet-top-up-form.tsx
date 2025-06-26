@@ -56,28 +56,30 @@ export function WalletTopUpForm() {
     });
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!currentUser) {
         toast({ title: "Login Required", description: "You must be logged in to request a top-up.", variant: "destructive" });
         setAuthDialogOpen(true);
         return;
     }
+    try {
+        await addTransaction({
+            date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
+            description: `Wallet Top-up via ${values.paymentMethod} (TrxID: ${values.transactionId})`,
+            amount: values.amount,
+            status: 'Pending',
+        });
+        
+        toast({
+          title: "Request Submitted",
+          description: `Your top-up request of ৳${values.amount.toFixed(2)} is pending approval.`,
+        });
 
-    addTransaction({
-        id: `TXN-${Date.now()}`,
-        date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
-        description: `Wallet Top-up via ${values.paymentMethod} (TrxID: ${values.transactionId})`,
-        amount: values.amount,
-        status: 'Pending',
-        userId: currentUser.uid,
-    });
-    
-    toast({
-      title: "Request Submitted",
-      description: `Your top-up request of ৳${values.amount.toFixed(2)} is pending approval.`,
-    });
-
-    router.push('/wallet');
+        router.push('/wallet');
+    } catch (error) {
+        console.error("Failed to submit top-up request", error);
+        toast({ title: "Error", description: "Failed to submit request.", variant: "destructive" });
+    }
   }
 
   return (
@@ -151,8 +153,8 @@ export function WalletTopUpForm() {
           )}
         />
         
-        <Button type="submit" size="lg" className="w-full bg-green-500 hover:bg-green-600 text-white font-bold">
-          Submit Payment
+        <Button type="submit" size="lg" className="w-full bg-green-500 hover:bg-green-600 text-white font-bold" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? 'Submitting...' : 'Submit Payment'}
         </Button>
       </form>
     </Form>
