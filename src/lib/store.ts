@@ -18,6 +18,7 @@ export type Order = {
   description: string;
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
+  userId: string;
 };
 
 export type Transaction = {
@@ -42,6 +43,7 @@ type AppState = {
   balance: number;
   orders: Order[];
   transactions: Transaction[];
+  users: User[];
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthDialogOpen: boolean;
@@ -61,6 +63,7 @@ export const useAppStore = create<AppState>()(
       balance: 1000,
       orders: [],
       transactions: [],
+      users: [],
       currentUser: null,
       isAuthLoading: true,
       isAuthDialogOpen: false,
@@ -70,7 +73,13 @@ export const useAppStore = create<AppState>()(
       
       _setCurrentUser: (user) => {
         if (user) {
-          set({ currentUser: { uid: user.uid, email: user.email }, isAuthLoading: false });
+          const newUser = { uid: user.uid, email: user.email };
+          set({ currentUser: newUser, isAuthLoading: false });
+          
+          const state = get();
+          if (!state.users.some(u => u.uid === user.uid)) {
+            set({ users: [...state.users, newUser] });
+          }
         } else {
           set({ currentUser: null, isAuthLoading: false });
         }

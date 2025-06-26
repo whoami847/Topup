@@ -72,7 +72,7 @@ const getValidationSchema = (category: TopUpCategory) => {
 export function TopUpForm({ category }: { category: TopUpCategory }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { balance, setBalance, addOrder, addTransaction } = useAppStore();
+  const { balance, setBalance, addOrder, addTransaction, currentUser } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
@@ -144,6 +144,7 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
         description: orderDescription,
         amount: totalPrice,
         status: "Completed",
+        userId: currentUser ? currentUser.uid : "guest",
     });
 
     addTransaction({
