@@ -91,7 +91,6 @@ export default function AdminCategoriesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Category Name</TableHead>
-                <TableHead>Image Hint</TableHead>
                 <TableHead className="text-center">Sub-categories</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -101,7 +100,6 @@ export default function AdminCategoriesPage() {
                 mainCategories.map((category) => (
                   <TableRow key={category.id}>
                     <TableCell className="font-medium">{category.title}</TableCell>
-                    <TableCell>{category.imageHint}</TableCell>
                     <TableCell className="text-center">{category.subCategorySlugs.length}</TableCell>
                     <TableCell className="text-right">
                        <DropdownMenu>
@@ -125,7 +123,7 @@ export default function AdminCategoriesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={3} className="h-24 text-center">
                     No categories found.
                   </TableCell>
                 </TableRow>
