@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -48,43 +49,43 @@ export default function AdminOrdersPage() {
         <CardDescription>A list of all the orders from your store.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.length > 0 ? (
-              orders.map((order) => {
-                const config = statusConfig[order.status] ?? statusConfig.Pending;
-                return (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.date}</TableCell>
-                    <TableCell>{order.description}</TableCell>
-                    <TableCell>
-                      <Badge variant={config.variant} className={cn(config.className)}>
-                        {config.text}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">৳{order.amount.toFixed(2)}</TableCell>
-                  </TableRow>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  No orders found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+        {orders.length > 0 ? (
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {orders.map((order) => {
+                        const config = statusConfig[order.status] ?? statusConfig.Pending;
+                        return (
+                        <TableRow key={order.id}>
+                            <TableCell className="font-medium">{order.id}</TableCell>
+                            <TableCell>{order.date}</TableCell>
+                            <TableCell>{order.description}</TableCell>
+                            <TableCell>
+                            <Badge variant={config.variant} className={cn(config.className)}>
+                                {config.text}
+                            </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">৳{order.amount.toFixed(2)}</TableCell>
+                        </TableRow>
+                        );
+                    })}
+                </TableBody>
+            </Table>
+        ) : (
+            <div className="flex flex-col items-center justify-center gap-4 text-center h-64">
+                <Package className="h-16 w-16 text-muted-foreground" />
+                <h3 className="text-xl font-semibold">No Orders Yet</h3>
+                <p className="text-muted-foreground">New orders from your customers will appear here.</p>
+            </div>
+        )}
       </CardContent>
     </Card>
   );
