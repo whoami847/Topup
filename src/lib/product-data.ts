@@ -6,7 +6,7 @@ export const initialTopUpCategories: TopUpCategory[] = [
     id: '1',
     slug: 'diamond-top-up-bd',
     title: 'DIAMOND TOP UP [BD]',
-    imageUrl: 'https://placehold.co/400x400.png',
+    imageUrl: 'https://images.unsplash.com/photo-1731533621924-efa45b8f48a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxkaWFtb25kJTIwdG9wdXB8ZW58MHx8fHwxNzUwOTQ4NzcxfDA&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'diamond topup',
     pageTitle: 'FREE FIRE TOPUP BD',
     products: [
@@ -34,7 +34,7 @@ export const initialTopUpCategories: TopUpCategory[] = [
     id: '2',
     slug: 'weekly-monthly-offer',
     title: 'WEEKLY MONTHLY OFFER',
-    imageUrl: 'https://placehold.co/400x400.png',
+    imageUrl: 'https://images.unsplash.com/photo-1572584642822-6f8de0243c93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx3ZWVrbHklMjBvZmZlcnxlbnwwfHx8fDE3NTA5NDg3NzF8MA&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'weekly offer',
     pageTitle: 'WEEKLY MONTHLY OFFER',
     products: [
@@ -56,7 +56,7 @@ export const initialTopUpCategories: TopUpCategory[] = [
     id: '3',
     slug: 'ff-ingame-top-up',
     title: 'FF IN-GAME TOP UP',
-    imageUrl: 'https://placehold.co/400x400.png',
+    imageUrl: 'https://images.unsplash.com/photo-1734868477300-cd624c12ba1c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxpbmdhbWUlMjB0b3B1cHxlbnwwfHx8fDE3NTA5NDg3NzF8MA&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'ingame topup',
     pageTitle: 'FF IN-GAME TOP UP',
     products: [
@@ -76,7 +76,7 @@ export const initialTopUpCategories: TopUpCategory[] = [
     id: '4',
     slug: 'airdrop-ingame',
     title: 'AIRDROP [INGAME]',
-    imageUrl: 'https://placehold.co/400x400.png',
+    imageUrl: 'https://images.unsplash.com/photo-1629573818834-bae4ff35288b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhaXJkcm9wJTIwY3JhdGV8ZW58MHx8fHwxNzUwOTQ4NzcxfDA&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'airdrop crate',
     pageTitle: 'AIRDROP [INGAME]',
     products: [
@@ -95,7 +95,7 @@ export const initialTopUpCategories: TopUpCategory[] = [
     id: '5',
     slug: 'indonesia-topup',
     title: 'INDONESIA TOPUP',
-    imageUrl: 'https://placehold.co/400x400.png',
+    imageUrl: 'https://images.unsplash.com/photo-1718627979298-d01eec742f55?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxpbmRvbmVzaWElMjBmbGFnfGVufDB8fHx8MTc1MDk0ODc3MXww&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'indonesia flag',
     pageTitle: 'INDONESIA TOPUP',
     products: [
@@ -105,7 +105,7 @@ export const initialTopUpCategories: TopUpCategory[] = [
       { id: 'it_4', name: 'Monthly Membership', price: 445 },
       { id: 'it_5', name: 'Booyah Pass', price: 455 },
     ],
-    formFields: ['player_id', 'quantity'],
+    formFields: ['player_id'],
     description: [
       'অনুগ্রহ করে Indonesia সার্ভারের ID Code দিয়ে টপ আপ করবেন।',
       'অর্ডার কনফার্ম হওয়ার পরেও আইডি/ভিডিওতে ডায়মন্ড না পেলে চেক করার জন্য ID Pass দিতে হবে।',
@@ -125,7 +125,7 @@ export const initialTopUpCategories: TopUpCategory[] = [
       { id: 'gs_4', name: '650 Shell MY', price: 1060 },
       { id: 'gs_5', name: '1300 Shell MY', price: 2060 },
     ],
-    formFields: ['email', 'quantity'],
+    formFields: ['email'],
     description: [
       'Garena Shells can be used to purchase in-game items on the Garena platform.',
       'You will receive the Shell code at the email address provided.',

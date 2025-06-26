@@ -1,3 +1,4 @@
+
 export type Product = {
   id: string;
   name: string;
@@ -11,8 +12,7 @@ export type FormFieldType =
   | 'account_type'
   | 'email_phone'
   | 'password'
-  | 'two_step_code'
-  | 'quantity';
+  | 'two_step_code';
 
 export type TopUpCategory = {
   id: string;

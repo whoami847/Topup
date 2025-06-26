@@ -48,7 +48,6 @@ const formFieldsOptions: { id: FormFieldType; label: string }[] = [
     { id: 'email_phone', label: 'Email/Phone' },
     { id: 'password', label: 'Password' },
     { id: 'two_step_code', label: 'Two-Step Code' },
-    { id: 'quantity', label: 'Quantity' },
 ];
 
 const productPriceSchema = z.object({
@@ -140,7 +139,7 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
         imageUrl: productData.imageUrl,
         imageHint: productData.title.toLowerCase().split(' ').slice(0, 2).join(' '),
         description: productData.description ? productData.description.split('\n').filter(Boolean) : [],
-        formFields: productData.formFields,
+        formFields: productData.formFields as FormFieldType[],
         products: productData.products || [],
     };
     
@@ -280,7 +279,7 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
                                     checked={field.value?.includes(item.id)}
                                     onCheckedChange={(checked) => {
                                       return checked
-                                        ? field.onChange([...field.value, item.id])
+                                        ? field.onChange([...(field.value || []), item.id])
                                         : field.onChange(field.value?.filter((value) => value !== item.id));
                                     }}
                                   />
