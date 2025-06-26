@@ -1,22 +1,30 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import SSLCommerz from 'sslcommerz-lts';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-const store_id = process.env.STORE_ID!;
-const store_passwd = process.env.STORE_PASSWORD!;
-const is_live = process.env.IS_LIVE === 'true';
+import type { Gateway } from '@/lib/gateways';
 
 export async function POST(req: NextRequest) {
     try {
+        // Find the active payment gateway from Firestore
+        const gatewaysRef = collection(db, 'gateways');
+        const q = query(gatewaysRef, where('enabled', '==', true), limit(1));
+        const gatewaySnapshot = await getDocs(q);
+
+        if (gatewaySnapshot.empty) {
+            return NextResponse.json({ message: 'No active payment gateway found. Please configure a gateway in the admin panel.' }, { status: 500 });
+        }
+
+        const gateway = gatewaySnapshot.docs[0].data() as Gateway;
+
         const body = await req.json();
         const { order, user } = body;
 
         if (!order || !user) {
              return NextResponse.json({ message: 'Missing order or user data' }, { status: 400 });
         }
-
+        
         const tran_id = `topup_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
         const data = {
@@ -43,20 +51,19 @@ export async function POST(req: NextRequest) {
 
         const newOrder = {
             ...order,
-            id: tran_id, // Use tran_id as the document ID
+            id: tran_id,
             status: 'PENDING',
+            gatewayId: gateway.id, // Store which gateway was used
         };
         
-        // Save the order to Firestore with PENDING status
         await setDoc(doc(db, "orders", tran_id), newOrder);
-
-        const sslcz = new SSLCommerz(store_id, store_passwd, is_live);
+        
+        const sslcz = new SSLCommerz(gateway.storeId, gateway.storePassword, gateway.isLive);
         const apiResponse = await sslcz.init(data);
 
         if (apiResponse.status === 'SUCCESS') {
             return NextResponse.json({ url: apiResponse.GatewayPageURL });
         } else {
-            // If initialization fails, update the order status
             await setDoc(doc(db, "orders", tran_id), { status: 'FAILED' }, { merge: true });
             return NextResponse.json({ message: 'Payment initialization failed', error: apiResponse }, { status: 500 });
         }

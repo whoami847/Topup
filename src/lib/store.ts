@@ -26,7 +26,7 @@ import {
 import { auth, db } from './firebase';
 import { initialMainCategories, initialTopUpCategories } from './product-data';
 import type { MainCategory, TopUpCategory, Product } from './products';
-import type { PaymentMethod } from './payments';
+import type { Gateway } from './gateways';
 
 
 export type Order = {
@@ -36,6 +36,7 @@ export type Order = {
   amount: number;
   status: 'COMPLETED' | 'PENDING' | 'FAILED' | 'CANCELLED';
   userId: string;
+  gatewayId: string;
   productDetails?: any;
   paymentDetails?: any;
 };
@@ -67,7 +68,7 @@ type AppState = {
   users: User[];
   mainCategories: MainCategory[];
   topUpCategories: TopUpCategory[];
-  paymentMethods: PaymentMethod[];
+  gateways: Gateway[];
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthDialogOpen: boolean;
@@ -77,8 +78,6 @@ type AppState = {
   registerUser: (credentials: Credentials) => Promise<{ success: boolean; message: string }>;
   loginUser: (credentials: Credentials) => Promise<{ success: boolean; message: string }>;
   logoutUser: () => Promise<void>;
-  addOrder: (order: Omit<Order, 'id' | 'userId'>) => Promise<void>;
-  updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
   updateTransactionStatus: (transactionId: string, status: Transaction['status']) => Promise<void>;
   addMainCategory: (category: Omit<MainCategory, 'id'>) => Promise<void>;
@@ -90,9 +89,9 @@ type AppState = {
   addPricePoint: (topUpCategoryId: string, newProduct: Omit<Product, 'id'>) => Promise<void>;
   updatePricePoint: (topUpCategoryId: string, productId: string, updatedProduct: Partial<Omit<Product, 'id'>>) => Promise<void>;
   deletePricePoint: (topUpCategoryId: string, productId: string) => Promise<void>;
-  addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => Promise<void>;
-  updatePaymentMethod: (id: string, method: Partial<Omit<PaymentMethod, 'id'>>) => Promise<void>;
-  deletePaymentMethod: (id: string) => Promise<void>;
+  addGateway: (gateway: Omit<Gateway, 'id'>) => Promise<void>;
+  updateGateway: (id: string, gateway: Partial<Omit<Gateway, 'id'>>) => Promise<void>;
+  deleteGateway: (id: string) => Promise<void>;
 };
 
 let unsubscribers: (() => void)[] = [];
@@ -109,7 +108,7 @@ export const useAppStore = create<AppState>()(
       users: [],
       mainCategories: [],
       topUpCategories: [],
-      paymentMethods: [],
+      gateways: [],
       currentUser: null,
       isAuthLoading: true,
       isAuthDialogOpen: false,
@@ -147,15 +146,15 @@ export const useAppStore = create<AppState>()(
           const unsubUsers = onSnapshot(collection(db, 'users'), snapshot => {
               set({ users: snapshot.docs.map(doc => doc.data() as User) });
           });
-           const unsubPayments = onSnapshot(collection(db, 'paymentMethods'), snapshot => {
-              set({ paymentMethods: snapshot.docs.map(doc => ({ ...doc.data() } as PaymentMethod)) });
+           const unsubGateways = onSnapshot(collection(db, 'gateways'), snapshot => {
+              set({ gateways: snapshot.docs.map(doc => ({ ...doc.data() } as Gateway)) });
           });
           
           const unsubAuth = onAuthStateChanged(auth, user => {
               // Detach previous user-specific listeners
-              unsubscribers = unsubscribers.filter(unsub => ![unsubMain, unsubTopUp, unsubUsers, unsubPayments, unsubAuth].includes(unsub));
+              unsubscribers = unsubscribers.filter(unsub => ![unsubMain, unsubTopUp, unsubUsers, unsubGateways, unsubAuth].includes(unsub));
               cleanupListeners();
-              unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPayments, unsubAuth];
+              unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubGateways, unsubAuth];
 
               if (user) {
                   const userDocSub = onSnapshot(doc(db, 'users', user.uid), userDoc => {
@@ -165,9 +164,11 @@ export const useAppStore = create<AppState>()(
                       }
                   });
 
-                  const ordersQuery = query(collection(db, 'orders'), where('userId', '==', user.uid));
-                  const ordersSub = onSnapshot(ordersQuery, snapshot => {
-                      set({ orders: snapshot.docs.map(d => ({id: d.id, ...d.data()}) as Order) });
+                  const allOrdersQuery = query(collection(db, 'orders'));
+                  const ordersSub = onSnapshot(allOrdersQuery, snapshot => {
+                      const allOrders = snapshot.docs.map(d => ({id: d.id, ...d.data()}) as Order);
+                      const userOrders = allOrders.filter(o => o.userId === user.uid);
+                      set({ orders: userOrders });
                   });
                   
                   const transactionsQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid));
@@ -181,7 +182,7 @@ export const useAppStore = create<AppState>()(
               }
               set({ isAuthLoading: false });
           });
-          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPayments, unsubAuth];
+          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubGateways, unsubAuth];
       },
 
       setAuthDialogOpen: (open) => set({ isAuthDialogOpen: open }),
@@ -211,17 +212,6 @@ export const useAppStore = create<AppState>()(
       
       logoutUser: async () => {
           await signOut(auth);
-      },
-
-      addOrder: async (order) => {
-        const currentUser = get().currentUser;
-        if (!currentUser) throw new Error("User not logged in.");
-        const orderRef = collection(db, 'orders');
-        await addDoc(orderRef, { ...order, userId: currentUser.uid });
-      },
-
-      updateOrderStatus: async (orderId, status) => {
-        await updateDoc(doc(db, 'orders', orderId), { status });
       },
       
       addTransaction: async (transaction) => {
@@ -323,17 +313,17 @@ export const useAppStore = create<AppState>()(
         await updateDoc(doc(db, 'topUpCategories', topUpCategoryId), { products: newProducts });
       },
 
-      addPaymentMethod: async (method) => {
-        const newId = `pm-${Date.now()}`;
-        await setDoc(doc(db, 'paymentMethods', newId), { ...method, id: newId });
+      addGateway: async (gateway) => {
+        const newId = `gw-${Date.now()}`;
+        await setDoc(doc(db, 'gateways', newId), { ...gateway, id: newId });
       },
 
-      updatePaymentMethod: async (id, updatedData) => {
-        await updateDoc(doc(db, 'paymentMethods', id), updatedData);
+      updateGateway: async (id, updatedData) => {
+        await updateDoc(doc(db, 'gateways', id), updatedData);
       },
 
-      deletePaymentMethod: async (id) => {
-        await deleteDoc(doc(db, 'paymentMethods', id));
+      deleteGateway: async (id) => {
+        await deleteDoc(doc(db, 'gateways', id));
       },
     })
 );

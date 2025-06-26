@@ -3,44 +3,52 @@ import { NextRequest, NextResponse } from 'next/server';
 import SSLCommerz from 'sslcommerz-lts';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-const store_id = process.env.STORE_ID!;
-const store_passwd = process.env.STORE_PASSWORD!;
-const is_live = process.env.IS_LIVE === 'true';
+import type { Gateway } from '@/lib/gateways';
+import type { Order } from '@/lib/store';
 
 export async function POST(req: NextRequest) {
     try {
-        const formData = await req.formData();
-        const body = Object.fromEntries(formData.entries());
+        const body = Object.fromEntries(await req.formData());
+        const tran_id = body.tran_id as string;
 
-        if (!body.tran_id || !body.val_id) {
+        if (!tran_id || !body.val_id) {
             return NextResponse.json({ message: 'Invalid IPN data' }, { status: 400 });
         }
 
-        const sslcz = new SSLCommerz(store_id, store_passwd, is_live);
+        const orderRef = doc(db, 'orders', tran_id);
+        const orderDoc = await getDoc(orderRef);
+
+        if (!orderDoc.exists()) {
+            return NextResponse.json({ message: 'Order not found' }, { status: 404 });
+        }
+        
+        const orderData = orderDoc.data() as Order;
+        const gatewayId = orderData.gatewayId;
+
+        if (!gatewayId) {
+             return NextResponse.json({ message: 'Gateway ID missing from order' }, { status: 400 });
+        }
+
+        const gatewayRef = doc(db, 'gateways', gatewayId);
+        const gatewayDoc = await getDoc(gatewayRef);
+
+        if (!gatewayDoc.exists()) {
+            return NextResponse.json({ message: 'Gateway configuration not found' }, { status: 404 });
+        }
+
+        const gateway = gatewayDoc.data() as Gateway;
+        const sslcz = new SSLCommerz(gateway.storeId, gateway.storePassword, gateway.isLive);
         const isValid = await sslcz.validate(body);
-
+        
         if (isValid) {
-            const orderRef = doc(db, 'orders', body.tran_id as string);
-            const orderDoc = await getDoc(orderRef);
-
-            if (orderDoc.exists()) {
-                const orderData = orderDoc.data();
-                // Check if already processed
-                if (orderData.status === 'PENDING') {
-                     await updateDoc(orderRef, {
-                        status: 'COMPLETED',
-                        paymentDetails: body, // Optionally save payment gateway response
-                    });
-                    
-                    // --- TRIGGER TOP-UP LOGIC HERE ---
-                    // Example: Call a function to deliver the in-game items
-                    // deliverTopUp(orderData.playerId, orderData.productName);
-                }
+            if (orderData.status === 'PENDING') {
+                 await updateDoc(orderRef, {
+                    status: 'COMPLETED',
+                    paymentDetails: body,
+                });
             }
             return new NextResponse(null, { status: 200 });
         } else {
-             const orderRef = doc(db, 'orders', body.tran_id as string);
              await updateDoc(orderRef, {
                 status: 'FAILED',
                 paymentDetails: body,
@@ -52,10 +60,3 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }
-
-// Ensure the body is parsed correctly
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
