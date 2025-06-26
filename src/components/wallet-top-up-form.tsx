@@ -42,7 +42,7 @@ export function WalletTopUpForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: undefined,
+      amount: '' as any,
       paymentMethod: undefined,
       transactionId: '',
     },
