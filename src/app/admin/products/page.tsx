@@ -38,7 +38,6 @@ import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { TopUpCategory } from '@/lib/products';
 import { ProductDialog } from '@/components/admin/product-dialog';
-import { Badge } from '@/components/ui/badge';
 
 export default function AdminProductsPage() {
   const { topUpCategories, deleteTopUpCategory } = useAppStore();
@@ -92,7 +91,6 @@ export default function AdminProductsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Product Title</TableHead>
-                <TableHead>Slug</TableHead>
                 <TableHead className="text-center">Price Points</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -102,7 +100,6 @@ export default function AdminProductsPage() {
                 topUpCategories.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.title}</TableCell>
-                    <TableCell><Badge variant="outline">{product.slug}</Badge></TableCell>
                     <TableCell className="text-center">{product.products.length}</TableCell>
                     <TableCell className="text-right">
                        <DropdownMenu>
@@ -126,7 +123,7 @@ export default function AdminProductsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={3} className="h-24 text-center">
                     No products found.
                   </TableCell>
                 </TableRow>
