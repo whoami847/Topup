@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useForm } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,14 @@ import { Textarea } from '../ui/textarea';
 import { Checkbox } from '../ui/checkbox';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { PlusCircle, Trash2 } from 'lucide-react';
 
 const formFieldsOptions: { id: FormFieldType; label: string }[] = [
     { id: 'player_id', label: 'Player ID' },
@@ -42,6 +50,12 @@ const formFieldsOptions: { id: FormFieldType; label: string }[] = [
     { id: 'quantity', label: 'Quantity' },
 ];
 
+const productPriceSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "Name is required."),
+  price: z.coerce.number().min(0, "Price must be non-negative."),
+});
+
 const productSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
   imageUrl: z.string().url('Must be a valid URL.'),
@@ -49,6 +63,8 @@ const productSchema = z.object({
   formFields: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: 'You have to select at least one form field.',
   }),
+  categoryId: z.string().min(1, 'Please select a category.'),
+  products: z.array(productPriceSchema).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -61,7 +77,7 @@ interface ProductDialogProps {
 }
 
 export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: ProductDialogProps) {
-  const { addTopUpCategory, updateTopUpCategory } = useAppStore();
+  const { mainCategories, addTopUpCategory, updateTopUpCategory } = useAppStore();
   const { toast } = useToast();
 
   const form = useForm<ProductFormValues>({
@@ -71,26 +87,40 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
       imageUrl: '',
       description: '',
       formFields: [],
+      categoryId: '',
+      products: [],
     },
+  });
+  
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "products",
   });
 
   React.useEffect(() => {
-    if (product) {
-      form.reset({
-        title: product.title,
-        imageUrl: product.imageUrl,
-        description: product.description.join('\n'),
-        formFields: product.formFields,
-      });
-    } else {
-      form.reset({
-        title: '',
-        imageUrl: 'https://placehold.co/400x400.png',
-        description: '',
-        formFields: [],
-      });
+    if (isOpen) {
+      if (product) {
+        const currentMainCategory = mainCategories.find(mc => mc.subCategorySlugs.includes(product.slug));
+        form.reset({
+          title: product.title,
+          imageUrl: product.imageUrl,
+          description: product.description.join('\n'),
+          formFields: product.formFields,
+          categoryId: currentMainCategory?.id || '',
+          products: product.products,
+        });
+      } else {
+        form.reset({
+          title: '',
+          imageUrl: 'https://placehold.co/400x400.png',
+          description: '',
+          formFields: [],
+          categoryId: '',
+          products: [],
+        });
+      }
     }
-  }, [product, form, isOpen]);
+  }, [product, form, isOpen, mainCategories]);
 
   const onSubmit = (data: ProductFormValues) => {
     const generateSlug = (title: string) => {
@@ -101,27 +131,26 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-');
     };
-
-    const slug = generateSlug(data.title);
+    
+    const { categoryId, ...productData } = data;
 
     const processedData = {
-        ...data,
-        slug: slug,
-        pageTitle: data.title.toUpperCase(),
-        imageHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
-        description: data.description ? data.description.split('\n').filter(Boolean) : [],
+        title: productData.title,
+        slug: generateSlug(productData.title),
+        pageTitle: productData.title.toUpperCase(),
+        imageUrl: productData.imageUrl,
+        imageHint: productData.title.toLowerCase().split(' ').slice(0, 2).join(' '),
+        description: productData.description ? productData.description.split('\n').filter(Boolean) : [],
+        formFields: productData.formFields,
+        products: productData.products || [],
     };
     
     try {
       if (product) {
-        updateTopUpCategory(product.id, processedData);
+        updateTopUpCategory(product.id, processedData, categoryId);
         toast({ title: 'Success', description: 'Product updated successfully.' });
       } else {
-        const dataForNewProduct = {
-            ...processedData,
-            products: [],
-        };
-        addTopUpCategory(dataForNewProduct as Omit<TopUpCategory, 'id'>);
+        addTopUpCategory(processedData, categoryId);
         toast({ title: 'Success', description: 'Product created successfully.' });
       }
       onSuccess();
@@ -144,13 +173,39 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <ScrollArea className="h-[60vh] pr-6">
               <div className="space-y-6">
-                <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl><Input placeholder="e.g., DIAMOND TOP UP [BD]" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="title" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl><Input placeholder="e.g., DIAMOND TOP UP [BD]" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                     <FormField
+                      control={form.control}
+                      name="categoryId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Main Category</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {mainCategories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.id}>
+                                  {cat.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
                 <FormField control={form.control} name="imageUrl" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Image URL</FormLabel>
@@ -203,6 +258,62 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
                     </FormItem>
                   )}
                 />
+
+                <Separator />
+
+                <div>
+                  <FormLabel className="text-base">Price Points</FormLabel>
+                  <FormDescription>Add the different options and prices for this product.</FormDescription>
+                  <div className="space-y-3 pt-4">
+                    <div className="grid grid-cols-[1fr_100px_auto] gap-2 items-start">
+                        <FormLabel>Name</FormLabel>
+                        <FormLabel>Price (৳)</FormLabel>
+                    </div>
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="grid grid-cols-[1fr_100px_auto] gap-2 items-start">
+                        <FormField
+                          control={form.control}
+                          name={`products.${index}.name`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl><Input placeholder="e.g., 25 Diamond" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`products.${index}.price`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl><Input type="number" placeholder="e.g., 22" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          className="shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Remove</span>
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => append({ id: `new-${Date.now()}`, name: '', price: 0 })}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add Price Point
+                    </Button>
+                  </div>
+                </div>
+
               </div>
             </ScrollArea>
             <DialogFooter className="pt-8">

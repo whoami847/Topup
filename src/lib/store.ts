@@ -65,8 +65,8 @@ type AppState = {
   addMainCategory: (category: Omit<MainCategory, 'id'>) => void;
   updateMainCategory: (id: string, category: Partial<Omit<MainCategory, 'id'>>) => void;
   deleteMainCategory: (id: string) => void;
-  addTopUpCategory: (category: Omit<TopUpCategory, 'id'>) => void;
-  updateTopUpCategory: (id: string, category: Partial<Omit<TopUpCategory, 'id'>>) => void;
+  addTopUpCategory: (category: Omit<TopUpCategory, 'id'>, mainCategoryId: string) => void;
+  updateTopUpCategory: (id: string, category: Partial<Omit<TopUpCategory, 'id'>>, newMainCategoryId: string) => void;
   deleteTopUpCategory: (id: string) => void;
 };
 
@@ -191,22 +191,64 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      addTopUpCategory: (category) => {
+      addTopUpCategory: (categoryData, mainCategoryId) => {
         const newCategory: TopUpCategory = {
-          ...category,
+          ...categoryData,
           id: `prod-cat-${Date.now()}`,
         };
-        set((state) => ({
-          topUpCategories: [...state.topUpCategories, newCategory],
-        }));
+        set((state) => {
+          const newTopUpCategories = [...state.topUpCategories, newCategory];
+          const newMainCategories = state.mainCategories.map((mainCat) => {
+            if (mainCat.id === mainCategoryId) {
+              return {
+                ...mainCat,
+                subCategorySlugs: [...mainCat.subCategorySlugs, newCategory.slug],
+              };
+            }
+            return mainCat;
+          });
+          return {
+            topUpCategories: newTopUpCategories,
+            mainCategories: newMainCategories,
+          };
+        });
       },
+      
+      updateTopUpCategory: (id, updatedData, newMainCategoryId) => {
+        set((state) => {
+          const productToUpdate = state.topUpCategories.find((cat) => cat.id === id);
+          if (!productToUpdate) return state;
 
-      updateTopUpCategory: (id, updatedData) => {
-        set((state) => ({
-          topUpCategories: state.topUpCategories.map((cat) =>
-            cat.id === id ? { ...cat, ...updatedData } : cat
-          ),
-        }));
+          const oldSlug = productToUpdate.slug;
+          const newSlug = updatedData.slug || oldSlug;
+
+          // 1. Remove the old slug from any category it might be in.
+          let updatedMainCategories = state.mainCategories.map(mc => ({
+              ...mc,
+              subCategorySlugs: mc.subCategorySlugs.filter(s => s !== oldSlug)
+          }));
+          
+          // 2. Add the new slug to the new category.
+          updatedMainCategories = updatedMainCategories.map(mc => {
+              if (mc.id === newMainCategoryId) {
+                  return {
+                      ...mc,
+                      subCategorySlugs: [...mc.subCategorySlugs, newSlug]
+                  };
+              }
+              return mc;
+          });
+          
+          // 3. Update the product data itself in the topUpCategories list.
+          const newTopUpCategories = state.topUpCategories.map((cat) =>
+            cat.id === id ? { ...productToUpdate, ...updatedData } : cat
+          );
+
+          return { 
+              topUpCategories: newTopUpCategories,
+              mainCategories: updatedMainCategories,
+           };
+        });
       },
 
       deleteTopUpCategory: (id) => {
