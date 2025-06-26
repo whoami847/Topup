@@ -141,15 +141,18 @@ export const useAppStore = create<AppState>()(
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            // Manually add the new user to the users list to ensure it's available immediately
             if (user) {
                 const newUser: User = { uid: user.uid, email: user.email };
                 set(state => {
-                    // Avoid duplicates if onAuthStateChanged runs first
-                    if (!state.users.some(u => u.uid === newUser.uid)) {
-                        return { users: [...state.users, newUser] };
+                    const userExists = state.users.some(u => u.uid === newUser.uid);
+                    if (userExists) {
+                        return { currentUser: newUser, isAuthLoading: false };
                     }
-                    return {};
+                    return {
+                        currentUser: newUser,
+                        isAuthLoading: false,
+                        users: [...state.users, newUser],
+                    };
                 });
             }
 
@@ -170,7 +173,12 @@ export const useAppStore = create<AppState>()(
       loginUser: async ({ email, password }) => {
           if (!password) return { success: false, message: "Password is required." };
           try {
-              await signInWithEmailAndPassword(auth, email, password);
+              const userCredential = await signInWithEmailAndPassword(auth, email, password);
+              const user = userCredential.user;
+              if (user) {
+                  const loggedInUser: User = { uid: user.uid, email: user.email };
+                  set({ currentUser: loggedInUser, isAuthLoading: false });
+              }
               return { success: true, message: "Login successful!" };
           } catch (error: any) {
               return { success: false, message: "Invalid email or password." };
@@ -188,6 +196,8 @@ export const useAppStore = create<AppState>()(
         const newCategory: MainCategory = {
           ...category,
           id: `cat-${Date.now()}`,
+          imageHint: category.title.toLowerCase().split(' ').slice(0, 2).join(' '),
+          subCategorySlugs: []
         };
         set((state) => ({
           mainCategories: [...state.mainCategories, newCategory],
@@ -239,13 +249,11 @@ export const useAppStore = create<AppState>()(
           const oldSlug = productToUpdate.slug;
           const newSlug = updatedData.slug || oldSlug;
 
-          // 1. Remove the old slug from any category it might be in.
           let updatedMainCategories = state.mainCategories.map(mc => ({
               ...mc,
               subCategorySlugs: mc.subCategorySlugs.filter(s => s !== oldSlug)
           }));
           
-          // 2. Add the new slug to the new category.
           updatedMainCategories = updatedMainCategories.map(mc => {
               if (mc.id === newMainCategoryId) {
                   return {
@@ -256,7 +264,6 @@ export const useAppStore = create<AppState>()(
               return mc;
           });
           
-          // 3. Update the product data itself in the topUpCategories list.
           const newTopUpCategories = state.topUpCategories.map((cat) =>
             cat.id === id ? { ...productToUpdate, ...updatedData } : cat
           );
