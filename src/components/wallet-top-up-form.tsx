@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -18,15 +19,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/lib/store';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { Copy } from 'lucide-react';
+import { Copy, Landmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from './ui/label';
-
-const paymentMethods = [
-  { id: 'bKash', name: 'bKash', number: '01756851247' },
-  { id: 'Nagad', name: 'Nagad', number: '01756851247' },
-  { id: 'Rocket', name: 'Rocket', number: '01756851247' },
-];
+import Image from 'next/image';
 
 const formSchema = z.object({
   amount: z.coerce.number().min(1, { message: "Please enter a valid amount." }),
@@ -36,7 +32,7 @@ const formSchema = z.object({
 
 export function WalletTopUpForm() {
   const { toast } = useToast();
-  const { addTransaction, currentUser, setAuthDialogOpen } = useAppStore();
+  const { addTransaction, currentUser, setAuthDialogOpen, paymentMethods } = useAppStore();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -63,9 +59,14 @@ export function WalletTopUpForm() {
         return;
     }
     try {
+        const selectedMethod = paymentMethods.find(m => m.id === values.paymentMethod);
+        if (!selectedMethod) {
+            toast({ title: "Error", description: "Invalid payment method selected.", variant: "destructive" });
+            return;
+        }
         await addTransaction({
             date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
-            description: `Wallet Top-up via ${values.paymentMethod} (TrxID: ${values.transactionId})`,
+            description: `Wallet Top-up via ${selectedMethod.name} (TrxID: ${values.transactionId})`,
             amount: values.amount,
             status: 'Pending',
         });
@@ -81,6 +82,8 @@ export function WalletTopUpForm() {
         toast({ title: "Error", description: "Failed to submit request.", variant: "destructive" });
     }
   }
+
+  const enabledPaymentMethods = paymentMethods.filter(m => m.enabled);
 
   return (
     <Form {...form}>
@@ -105,35 +108,52 @@ export function WalletTopUpForm() {
           render={({ field }) => (
             <FormItem className="space-y-4">
               <FormLabel>Select Payment Method</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="space-y-3"
-                >
-                  {paymentMethods.map((method) => (
-                    <div key={method.id} className="flex items-center gap-4">
-                      <RadioGroupItem value={method.id} id={method.id} />
-                      <Label
-                          htmlFor={method.id}
-                          className={cn(
-                              "flex-1 flex justify-between items-center rounded-lg border-2 p-4 cursor-pointer transition-colors",
-                              field.value === method.id ? 'border-primary bg-primary/5' : 'border-muted'
-                          )}
-                      >
-                          <div>
-                              <p className="font-semibold">{method.name}</p>
-                              <p className="text-sm text-muted-foreground">Personal</p>
-                              <p className="text-sm font-medium">{method.number}</p>
-                          </div>
-                          <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); handleCopy(method.number)}}>
-                              <Copy className="h-5 w-5 text-muted-foreground" />
-                          </Button>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </FormControl>
+              {enabledPaymentMethods.length > 0 ? (
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="space-y-3"
+                  >
+                    {enabledPaymentMethods.map((method) => (
+                      <div key={method.id} className="flex items-center gap-4">
+                        <RadioGroupItem value={method.id} id={method.id} />
+                        <Label
+                            htmlFor={method.id}
+                            className={cn(
+                                "flex-1 flex justify-between items-center rounded-lg border-2 p-3 cursor-pointer transition-colors",
+                                field.value === method.id ? 'border-primary bg-primary/5' : 'border-muted'
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
+                                <Image 
+                                    src={method.logoUrl} 
+                                    alt={method.name} 
+                                    width={40} 
+                                    height={40}
+                                    className="object-contain"
+                                />
+                                <div>
+                                    <p className="font-semibold">{method.name}</p>
+                                    <p className="text-sm text-muted-foreground">{method.accountType}</p>
+                                    <p className="text-sm font-medium">{method.accountNumber}</p>
+                                </div>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); handleCopy(method.accountNumber)}}>
+                                <Copy className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              ) : (
+                <div className="text-center text-muted-foreground py-8 border rounded-lg">
+                  <Landmark className="mx-auto h-10 w-10 mb-2" />
+                  <p>No payment methods are currently available.</p>
+                  <p className="text-sm">Please contact support.</p>
+                </div>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -153,7 +173,7 @@ export function WalletTopUpForm() {
           )}
         />
         
-        <Button type="submit" size="lg" className="w-full bg-green-500 hover:bg-green-600 text-white font-bold" disabled={form.formState.isSubmitting}>
+        <Button type="submit" size="lg" className="w-full bg-green-500 hover:bg-green-600 text-white font-bold" disabled={form.formState.isSubmitting || enabledPaymentMethods.length === 0}>
           {form.formState.isSubmitting ? 'Submitting...' : 'Submit Payment'}
         </Button>
       </form>

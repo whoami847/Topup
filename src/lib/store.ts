@@ -26,6 +26,7 @@ import {
 import { auth, db } from './firebase';
 import { initialMainCategories, initialTopUpCategories } from './product-data';
 import type { MainCategory, TopUpCategory, Product } from './products';
+import type { PaymentMethod } from './payments';
 
 
 export type Order = {
@@ -64,6 +65,7 @@ type AppState = {
   users: User[];
   mainCategories: MainCategory[];
   topUpCategories: TopUpCategory[];
+  paymentMethods: PaymentMethod[];
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthDialogOpen: boolean;
@@ -86,6 +88,9 @@ type AppState = {
   addPricePoint: (topUpCategoryId: string, newProduct: Omit<Product, 'id'>) => Promise<void>;
   updatePricePoint: (topUpCategoryId: string, productId: string, updatedProduct: Partial<Omit<Product, 'id'>>) => Promise<void>;
   deletePricePoint: (topUpCategoryId: string, productId: string) => Promise<void>;
+  addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => Promise<void>;
+  updatePaymentMethod: (id: string, method: Partial<Omit<PaymentMethod, 'id'>>) => Promise<void>;
+  deletePaymentMethod: (id: string) => Promise<void>;
 };
 
 let unsubscribers: (() => void)[] = [];
@@ -102,6 +107,7 @@ export const useAppStore = create<AppState>()(
       users: [],
       mainCategories: [],
       topUpCategories: [],
+      paymentMethods: [],
       currentUser: null,
       isAuthLoading: true,
       isAuthDialogOpen: false,
@@ -139,12 +145,15 @@ export const useAppStore = create<AppState>()(
           const unsubUsers = onSnapshot(collection(db, 'users'), snapshot => {
               set({ users: snapshot.docs.map(doc => doc.data() as User) });
           });
+           const unsubPayments = onSnapshot(collection(db, 'paymentMethods'), snapshot => {
+              set({ paymentMethods: snapshot.docs.map(doc => ({ ...doc.data() } as PaymentMethod)) });
+          });
           
           const unsubAuth = onAuthStateChanged(auth, user => {
               // Detach previous user-specific listeners
-              unsubscribers = unsubscribers.filter(unsub => ![unsubMain, unsubTopUp, unsubUsers, unsubAuth].includes(unsub));
+              unsubscribers = unsubscribers.filter(unsub => ![unsubMain, unsubTopUp, unsubUsers, unsubPayments, unsubAuth].includes(unsub));
               cleanupListeners();
-              unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubAuth];
+              unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPayments, unsubAuth];
 
               if (user) {
                   const userDocSub = onSnapshot(doc(db, 'users', user.uid), userDoc => {
@@ -170,7 +179,7 @@ export const useAppStore = create<AppState>()(
               }
               set({ isAuthLoading: false });
           });
-          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubAuth];
+          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPayments, unsubAuth];
       },
 
       setAuthDialogOpen: (open) => set({ isAuthDialogOpen: open }),
@@ -310,6 +319,19 @@ export const useAppStore = create<AppState>()(
         if (!category) return;
         const newProducts = category.products.filter(p => p.id !== productId);
         await updateDoc(doc(db, 'topUpCategories', topUpCategoryId), { products: newProducts });
+      },
+
+      addPaymentMethod: async (method) => {
+        const newId = `pm-${Date.now()}`;
+        await setDoc(doc(db, 'paymentMethods', newId), { ...method, id: newId });
+      },
+
+      updatePaymentMethod: async (id, updatedData) => {
+        await updateDoc(doc(db, 'paymentMethods', id), updatedData);
+      },
+
+      deletePaymentMethod: async (id) => {
+        await deleteDoc(doc(db, 'paymentMethods', id));
       },
     })
 );
