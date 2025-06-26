@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Image from 'next/image';
 
 const formFieldsOptions: { id: FormFieldType; label: string }[] = [
     { id: 'player_id', label: 'Player ID' },
@@ -57,7 +58,7 @@ const productPriceSchema = z.object({
 
 const productSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
-  imageUrl: z.string().url('Must be a valid URL.'),
+  imageUrl: z.string().min(1, 'Image is required.'),
   description: z.string().optional(),
   formFields: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: 'You have to select at least one form field.',
@@ -78,6 +79,7 @@ interface ProductDialogProps {
 export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: ProductDialogProps) {
   const { mainCategories, addTopUpCategory, updateTopUpCategory } = useAppStore();
   const { toast } = useToast();
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -103,15 +105,17 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
           categoryId: currentMainCategory?.id || '',
           products: product.products,
         });
+        setImagePreview(product.imageUrl);
       } else {
         form.reset({
           title: '',
-          imageUrl: 'https://placehold.co/400x400.png',
+          imageUrl: '',
           description: '',
           formFields: [],
           categoryId: '',
           products: [],
         });
+        setImagePreview(null);
       }
     }
   }, [product, form, isOpen, mainCategories]);
@@ -200,13 +204,50 @@ export function ProductDialog({ isOpen, onOpenChange, product, onSuccess }: Prod
                       )}
                     />
                 </div>
-                <FormField control={form.control} name="imageUrl" render={({ field }) => (
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={() => (
                     <FormItem>
-                        <FormLabel>Image URL</FormLabel>
-                        <FormControl><Input placeholder="https://placehold.co/400x400.png" {...field} /></FormControl>
-                        <FormMessage />
+                      <FormLabel>Product Image</FormLabel>
+                      <FormControl>
+                        <div>
+                          {imagePreview ? (
+                            <Image
+                              src={imagePreview}
+                              alt="Product Preview"
+                              width={128}
+                              height={128}
+                              className="w-32 h-32 object-cover rounded-md mb-2 border"
+                            />
+                          ) : (
+                            <div className="w-32 h-32 flex items-center justify-center bg-muted rounded-md mb-2 border">
+                              <span className="text-xs text-muted-foreground">No Image</span>
+                            </div>
+                          )}
+                          <Input
+                            type="file"
+                            accept="image/png, image/jpeg, image/webp"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  const dataUrl = reader.result as string;
+                                  form.setValue('imageUrl', dataUrl, { shouldValidate: true });
+                                  setImagePreview(dataUrl);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="max-w-xs"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )} />
+                  )}
+                />
                 <FormField control={form.control} name="description" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Description</FormLabel>

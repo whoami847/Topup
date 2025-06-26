@@ -26,10 +26,11 @@ import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/lib/store';
 import type { MainCategory } from '@/lib/products';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 const categorySchema = z.object({
   title: z.string().min(1, 'Title is required.'),
-  imageUrl: z.string().url('Must be a valid URL.'),
+  imageUrl: z.string().min(1, 'Image is required.'),
 });
 
 type CategoryFormValues = z.infer<typeof categorySchema>;
@@ -44,6 +45,7 @@ interface CategoryDialogProps {
 export function CategoryDialog({ isOpen, onOpenChange, category, onSuccess }: CategoryDialogProps) {
   const { addMainCategory, updateMainCategory } = useAppStore();
   const { toast } = useToast();
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
@@ -55,17 +57,19 @@ export function CategoryDialog({ isOpen, onOpenChange, category, onSuccess }: Ca
 
   React.useEffect(() => {
     if (isOpen) {
-        if (category) {
+      if (category) {
         form.reset({
-            title: category.title,
-            imageUrl: category.imageUrl,
+          title: category.title,
+          imageUrl: category.imageUrl,
         });
-        } else {
+        setImagePreview(category.imageUrl);
+      } else {
         form.reset({
-            title: '',
-            imageUrl: 'https://placehold.co/400x400.png',
+          title: '',
+          imageUrl: '',
         });
-        }
+        setImagePreview(null);
+      }
     }
   }, [category, form, isOpen]);
 
@@ -81,7 +85,8 @@ export function CategoryDialog({ isOpen, onOpenChange, category, onSuccess }: Ca
       } else {
         // For new categories, build the full object
         const newCategoryData: Omit<MainCategory, 'id'> = {
-            ...data,
+            title: data.title,
+            imageUrl: data.imageUrl,
             imageHint: data.title.toLowerCase().split(' ').slice(0, 2).join(' '),
             subCategorySlugs: []
         };
@@ -121,11 +126,42 @@ export function CategoryDialog({ isOpen, onOpenChange, category, onSuccess }: Ca
             <FormField
               control={form.control}
               name="imageUrl"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
-                  <FormLabel>Image URL</FormLabel>
+                  <FormLabel>Category Image</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://placehold.co/400x400.png" {...field} />
+                    <div>
+                      {imagePreview ? (
+                        <Image
+                          src={imagePreview}
+                          alt="Category Preview"
+                          width={128}
+                          height={128}
+                          className="w-32 h-32 object-cover rounded-md mb-2 border"
+                        />
+                      ) : (
+                        <div className="w-32 h-32 flex items-center justify-center bg-muted rounded-md mb-2 border">
+                          <span className="text-xs text-muted-foreground">No Image</span>
+                        </div>
+                      )}
+                      <Input
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const dataUrl = reader.result as string;
+                              form.setValue('imageUrl', dataUrl, { shouldValidate: true });
+                              setImagePreview(dataUrl);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="max-w-xs"
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
