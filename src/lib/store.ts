@@ -73,13 +73,19 @@ export const useAppStore = create<AppState>()(
       
       _setCurrentUser: (user) => {
         if (user) {
-          const newUser = { uid: user.uid, email: user.email };
-          set({ currentUser: newUser, isAuthLoading: false });
-          
-          const state = get();
-          if (!state.users.some(u => u.uid === user.uid)) {
-            set({ users: [...state.users, newUser] });
-          }
+          const newUser: User = { uid: user.uid, email: user.email };
+          set((state) => {
+            const userExists = state.users.some((u) => u.uid === user.uid);
+            if (userExists) {
+              return { currentUser: newUser, isAuthLoading: false };
+            } else {
+              return {
+                currentUser: newUser,
+                isAuthLoading: false,
+                users: [...state.users, newUser],
+              };
+            }
+          });
         } else {
           set({ currentUser: null, isAuthLoading: false });
         }
