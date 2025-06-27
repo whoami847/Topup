@@ -14,76 +14,82 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/lib/store';
 import { format } from 'date-fns';
-import { useRouter } from 'next/navigation';
-import { Copy, Landmark } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Label } from './ui/label';
-import Image from 'next/image';
+import { useState } from 'react';
+import { Landmark } from 'lucide-react';
 
 const formSchema = z.object({
-  amount: z.coerce.number().min(1, { message: "Please enter a valid amount." }),
-  paymentMethod: z.string({ required_error: "Please select a payment method." }),
-  transactionId: z.string().min(1, { message: "Transaction ID is required." }),
+  amount: z.coerce.number().min(50, { message: "Minimum top-up amount is ৳50." }),
 });
 
 export function WalletTopUpForm() {
   const { toast } = useToast();
-  const { addTransaction, currentUser, setAuthDialogOpen, paymentMethods } = useAppStore();
-  const router = useRouter();
+  const { currentUser, setAuthDialogOpen, gateways } = useAppStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: '' as any,
-      paymentMethod: undefined,
-      transactionId: '',
     },
   });
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied!",
-      description: "Payment number copied to clipboard.",
-    });
-  };
+  const enabledGateways = (gateways || []).filter(g => g.enabled);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
     if (!currentUser) {
-        toast({ title: "Login Required", description: "You must be logged in to request a top-up.", variant: "destructive" });
+        toast({ title: "Login Required", description: "You must be logged in to top-up your wallet.", variant: "destructive" });
         setAuthDialogOpen(true);
+        setIsSubmitting(false);
         return;
     }
+    if (enabledGateways.length === 0) {
+        toast({ title: "No Gateway", description: "No payment gateway is enabled. Please contact support.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+    }
+
     try {
-        const selectedMethod = (paymentMethods || []).find(m => m.id === values.paymentMethod);
-        if (!selectedMethod) {
-            toast({ title: "Error", description: "Invalid payment method selected.", variant: "destructive" });
-            return;
-        }
-        await addTransaction({
+        const orderDetails = {
             date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
-            description: `Wallet Top-up via ${selectedMethod.name} (TrxID: ${values.transactionId})`,
+            description: `Wallet Top-up`, // Simple description
             amount: values.amount,
-            status: 'Pending',
-        });
-        
-        toast({
-          title: "Request Submitted",
-          description: `Your top-up request of ৳${values.amount.toFixed(2)} is pending approval.`,
+            userId: currentUser.uid,
+        };
+
+        const response = await fetch('/api/payment/initiate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: orderDetails, user: currentUser }),
         });
 
-        router.push('/wallet');
+        const data = await response.json();
+
+        if (response.ok && data.url) {
+            window.location.href = data.url; // Redirect to payment gateway
+        } else {
+            toast({ title: "Error", description: data.message || "Failed to initiate payment.", variant: "destructive" });
+            setIsSubmitting(false);
+        }
     } catch (error) {
-        console.error("Failed to submit top-up request", error);
-        toast({ title: "Error", description: "Failed to submit request.", variant: "destructive" });
+        console.error("Failed to initiate wallet top-up", error);
+        toast({ title: "Error", description: "Failed to connect to the payment server.", variant: "destructive" });
+        setIsSubmitting(false);
     }
   }
 
-  const enabledPaymentMethods = (paymentMethods || []).filter(m => m.enabled);
+  if (enabledGateways.length === 0) {
+      return (
+          <div className="text-center text-muted-foreground py-8 border rounded-lg">
+            <Landmark className="mx-auto h-10 w-10 mb-2" />
+            <p>No payment gateways are currently available.</p>
+            <p className="text-sm">Please contact support.</p>
+          </div>
+      )
+  }
 
   return (
     <Form {...form}>
@@ -93,88 +99,22 @@ export function WalletTopUpForm() {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount to Topup (৳) *</FormLabel>
+              <FormLabel>Amount to Top-up (৳) *</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="Enter amount to topup" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="paymentMethod"
-          render={({ field }) => (
-            <FormItem className="space-y-4">
-              <FormLabel>Select Payment Method</FormLabel>
-              {enabledPaymentMethods.length > 0 ? (
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    className="space-y-3"
-                  >
-                    {enabledPaymentMethods.map((method) => (
-                      <div key={method.id} className="flex items-center gap-4">
-                        <RadioGroupItem value={method.id} id={method.id} />
-                        <Label
-                            htmlFor={method.id}
-                            className={cn(
-                                "flex-1 flex justify-between items-center rounded-lg border-2 p-3 cursor-pointer transition-colors",
-                                field.value === method.id ? 'border-primary bg-primary/5' : 'border-muted'
-                            )}
-                        >
-                            <div className="flex items-center gap-3">
-                                <Image 
-                                    src={method.logoUrl} 
-                                    alt={method.name} 
-                                    width={40} 
-                                    height={40}
-                                    className="object-contain"
-                                />
-                                <div>
-                                    <p className="font-semibold">{method.name}</p>
-                                    <p className="text-sm text-muted-foreground">{method.accountType}</p>
-                                    <p className="text-sm font-medium">{method.accountNumber}</p>
-                                </div>
-                            </div>
-                            <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); handleCopy(method.accountNumber)}}>
-                                <Copy className="h-5 w-5 text-muted-foreground" />
-                            </Button>
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-              ) : (
-                <div className="text-center text-muted-foreground py-8 border rounded-lg">
-                  <Landmark className="mx-auto h-10 w-10 mb-2" />
-                  <p>No payment methods are currently available.</p>
-                  <p className="text-sm">Please contact support.</p>
-                </div>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="transactionId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Transaction ID *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter your transaction ID" {...field} />
+                <Input type="number" placeholder="Enter amount" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         
-        <Button type="submit" size="lg" className="w-full bg-green-500 hover:bg-green-600 text-white font-bold" disabled={form.formState.isSubmitting || enabledPaymentMethods.length === 0}>
-          {form.formState.isSubmitting ? 'Submitting...' : 'Submit Payment'}
+        <Button 
+            type="submit" 
+            size="lg" 
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold" 
+            disabled={isSubmitting || enabledGateways.length === 0}
+        >
+          {isSubmitting ? 'Processing...' : 'Proceed to Payment'}
         </Button>
       </form>
     </Form>

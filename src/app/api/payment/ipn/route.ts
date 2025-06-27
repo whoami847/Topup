@@ -1,16 +1,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, writeBatch, collection, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Gateway } from '@/lib/gateways';
-import type { Order } from '@/lib/store';
+import type { Order, Transaction } from '@/lib/store';
 import { getPaymentService } from '@/lib/payment-services';
+import { format } from 'date-fns';
 
 export async function POST(req: NextRequest) {
     try {
         const body = Object.fromEntries(await req.formData());
         
-        // SSLCommerz uses 'tran_id', others might use something else.
         // This might need adjustment based on the gateway.
         const tran_id = body.tran_id as string;
 
@@ -54,12 +54,39 @@ export async function POST(req: NextRequest) {
         const validationResponse = await paymentService.validateIPN(body, gateway);
         
         if (validationResponse.isValid) {
-            await updateDoc(orderRef, {
+            // Start a batch write
+            const batch = writeBatch(db);
+
+            // 1. Update the order status
+            batch.update(orderRef, {
                 status: 'COMPLETED',
                 paymentDetails: validationResponse.paymentDetails,
             });
-            // TODO: Here you would trigger the actual top-up for the player
-            // e.g., callTopUpAPI(orderData.productDetails.player_id, orderData.description);
+
+            // 2. Check if it's a wallet top-up and update balance
+            if (orderData.description.includes('Wallet Top-up')) {
+                const userRef = doc(db, 'users', orderData.userId);
+                batch.update(userRef, { balance: increment(orderData.amount) });
+                
+                // 3. Create a transaction record for history
+                const transactionRef = doc(collection(db, 'transactions'));
+                const newTransaction: Omit<Transaction, 'id'> = {
+                    date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
+                    description: `Wallet Top-up via ${gateway.name}`,
+                    amount: orderData.amount,
+                    status: 'Completed',
+                    userId: orderData.userId,
+                };
+                batch.set(transactionRef, newTransaction);
+            } else {
+                // This is a product purchase.
+                // TODO: Here you would trigger the actual top-up for the player
+                // e.g., callTopUpAPI(orderData.productDetails.player_id, orderData.description);
+            }
+
+            // Commit all batched writes
+            await batch.commit();
+
         } else {
              await updateDoc(orderRef, {
                 status: 'FAILED',
