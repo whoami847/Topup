@@ -129,7 +129,7 @@ export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: Gate
                 <FormItem>
                   <FormLabel>Gateway Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., SSLCOMMERZ or RupantorPay" {...field} />
+                    <Input placeholder="e.g., RupantorPay" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

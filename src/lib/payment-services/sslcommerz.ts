@@ -1,5 +1,7 @@
 
-import SSLCommerz from 'sslcommerz-lts';
+// This file is a placeholder for potential SSLCommerz integration in the future.
+// The current focus is on RupantorPay.
+
 import type { Gateway } from '../gateways';
 import type { Order } from '../store';
 import type {
@@ -14,62 +16,16 @@ class SSLCommerzService implements PaymentService {
     userEmail: string,
     gateway: Gateway
   ): Promise<PaymentInitiationResponse> {
-    const data = {
-      total_amount: order.amount,
-      currency: 'BDT',
-      tran_id: order.id,
-      success_url: `${process.env.CLIENT_URL}/api/payment/success/${order.id}`,
-      fail_url: `${process.env.CLIENT_URL}/api/payment/fail/${order.id}`,
-      cancel_url: `${process.env.CLIENT_URL}/api/payment/cancel/${order.id}`,
-      ipn_url: `${process.env.CLIENT_URL}/api/payment/ipn`,
-      shipping_method: 'No',
-      product_name: order.description,
-      product_category: 'Digital Goods',
-      product_profile: 'digital-goods',
-      cus_name: userEmail,
-      cus_email: userEmail,
-      cus_add1: 'N/A',
-      cus_city: 'N/A',
-      cus_state: 'N/A',
-      cus_postcode: 'N/A',
-      cus_country: 'Bangladesh',
-      cus_phone: 'N/A',
-    };
-
-    const sslcz = new SSLCommerz(
-      gateway.storeId,
-      gateway.storePassword,
-      gateway.isLive
-    );
-    const apiResponse = await sslcz.init(data);
-
-    if (apiResponse.status === 'SUCCESS') {
-      return { success: true, url: apiResponse.GatewayPageURL };
-    } else {
-      return {
-        success: false,
-        message: 'SSLCommerz initialization failed.',
-      };
-    }
+    console.log("SSLCommerz service is not fully implemented yet.");
+    return Promise.resolve({ success: false, message: 'SSLCommerz is not configured.' });
   }
 
   async validateIPN(
     body: any,
     gateway: Gateway
   ): Promise<PaymentValidationResponse> {
-    const sslcz = new SSLCommerz(
-      gateway.storeId,
-      gateway.storePassword,
-      gateway.isLive
-    );
-    const isValid = await sslcz.validate(body);
-
-    return {
-      isValid,
-      transactionId: body.tran_id,
-      status: isValid ? 'COMPLETED' : 'FAILED',
-      paymentDetails: body,
-    };
+    console.log("SSLCommerz service is not fully implemented yet.");
+    return Promise.resolve({ isValid: false, transactionId: body.tran_id, status: 'FAILED', paymentDetails: body });
   }
 }
 

@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
         const newOrder: Order = {
             ...order,
             id: tran_id,
+            userId: user.uid,
             status: 'PENDING',
             gatewayId: gateway.id,
         };

@@ -21,13 +21,15 @@ import {
     setDoc,
     query,
     where,
-    increment
+    increment,
+    serverTimestamp,
+    getDoc
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { initialMainCategories, initialTopUpCategories } from './product-data';
 import type { MainCategory, TopUpCategory, Product } from './products';
 import type { PaymentMethod } from './payments';
-
+import type { Gateway } from './gateways';
 
 export type Order = {
   id: string;
@@ -37,6 +39,8 @@ export type Order = {
   status: 'COMPLETED' | 'PENDING' | 'FAILED' | 'CANCELLED';
   userId: string;
   productDetails?: any;
+  gatewayId?: string;
+  paymentDetails?: any;
 };
 
 export type Transaction = {
@@ -67,6 +71,7 @@ type AppState = {
   mainCategories: MainCategory[];
   topUpCategories: TopUpCategory[];
   paymentMethods: PaymentMethod[];
+  gateways: Gateway[];
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthDialogOpen: boolean;
@@ -91,6 +96,9 @@ type AppState = {
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => Promise<void>;
   updatePaymentMethod: (id: string, method: Partial<Omit<PaymentMethod, 'id'>>) => Promise<void>;
   deletePaymentMethod: (id: string) => Promise<void>;
+  addGateway: (gateway: Omit<Gateway, 'id'>) => Promise<void>;
+  updateGateway: (id: string, gateway: Partial<Omit<Gateway, 'id'>>) => Promise<void>;
+  deleteGateway: (id: string) => Promise<void>;
 };
 
 let unsubscribers: (() => void)[] = [];
@@ -108,6 +116,7 @@ export const useAppStore = create<AppState>()(
       mainCategories: [],
       topUpCategories: [],
       paymentMethods: [],
+      gateways: [],
       currentUser: null,
       isAuthLoading: true,
       isAuthDialogOpen: false,
@@ -148,19 +157,28 @@ export const useAppStore = create<AppState>()(
            const unsubPaymentMethods = onSnapshot(collection(db, 'paymentMethods'), snapshot => {
               set({ paymentMethods: snapshot.docs.map(doc => ({ ...doc.data() } as PaymentMethod)) });
           });
+           const unsubGateways = onSnapshot(collection(db, 'gateways'), snapshot => {
+              set({ gateways: snapshot.docs.map(doc => ({ ...doc.data() } as Gateway)) });
+          });
           
           const unsubAuth = onAuthStateChanged(auth, user => {
+              const staticUnsubs = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
               // Detach previous user-specific listeners
-              unsubscribers = unsubscribers.filter(unsub => ![unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubAuth].includes(unsub));
+              unsubscribers = unsubscribers.filter(unsub => !staticUnsubs.includes(unsub));
               cleanupListeners();
-              unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubAuth];
+              unsubscribers = staticUnsubs;
 
               if (user) {
-                  const userDocSub = onSnapshot(doc(db, 'users', user.uid), userDoc => {
-                      if (userDoc.exists()) {
-                          const userData = userDoc.data() as User;
-                          set({ currentUser: userData, balance: userData.balance });
-                      }
+                  const userDocSub = onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
+                       if (!userDoc.exists()) {
+                          console.log(`Creating user profile for ${user.uid}`);
+                          const newUser: User = { uid: user.uid, email: user.email, balance: 0 };
+                          await setDoc(doc(db, "users", user.uid), newUser);
+                          set({ currentUser: newUser, balance: 0 });
+                       } else {
+                           const userData = userDoc.data() as User;
+                           set({ currentUser: userData, balance: userData.balance });
+                       }
                   });
                   
                   const ordersQuery = query(collection(db, 'orders'), where('userId', '==', user.uid));
@@ -179,7 +197,7 @@ export const useAppStore = create<AppState>()(
               }
               set({ isAuthLoading: false });
           });
-          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubAuth];
+          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
       },
 
       setAuthDialogOpen: (open) => set({ isAuthDialogOpen: open }),
@@ -214,12 +232,13 @@ export const useAppStore = create<AppState>()(
       addTransaction: async (transaction) => {
         const currentUser = get().currentUser;
         if (!currentUser) throw new Error("User not logged in.");
-        await addDoc(collection(db, 'transactions'), { ...transaction, userId: currentUser.uid });
+        const transactionRef = doc(collection(db, 'transactions'));
+        await setDoc(transactionRef, { ...transaction, userId: currentUser.uid, id: transactionRef.id });
       },
 
       updateTransactionStatus: async (transactionId, status) => {
           const transactionRef = doc(db, 'transactions', transactionId);
-          const transactionDoc = get().transactions.find(t => t.id === transactionId);
+          const transactionDoc = (await getDoc(transactionRef)).data() as Transaction | undefined;
           
           if (transactionDoc && transactionDoc.status === 'Pending' && status === 'Completed' && transactionDoc.amount > 0) {
               const userRef = doc(db, 'users', transactionDoc.userId);
@@ -255,6 +274,7 @@ export const useAppStore = create<AppState>()(
         // 2. Create a transaction record for the purchase
         const transactionRef = doc(collection(db, 'transactions'));
         batch.set(transactionRef, {
+            id: transactionRef.id,
             date: orderData.date,
             description: orderData.description,
             amount: -orderData.amount, // Negative amount for purchase
@@ -278,8 +298,8 @@ export const useAppStore = create<AppState>()(
       },
 
       addMainCategory: async (category) => {
-        const newId = `cat-${Date.now()}`;
-        await setDoc(doc(db, 'mainCategories', newId), { ...category, id: newId });
+        const newDocRef = doc(collection(db, 'mainCategories'));
+        await setDoc(newDocRef, { ...category, id: newDocRef.id });
       },
 
       updateMainCategory: async (id, updatedData) => {
@@ -291,11 +311,11 @@ export const useAppStore = create<AppState>()(
       },
 
       addTopUpCategory: async (categoryData, mainCategoryId) => {
-        const newId = `prod-cat-${Date.now()}`;
-        const newCategory = { ...categoryData, id: newId };
+        const newDocRef = doc(collection(db, 'topUpCategories'));
+        const newCategory = { ...categoryData, id: newDocRef.id };
         
         const batch = writeBatch(db);
-        batch.set(doc(db, 'topUpCategories', newId), newCategory);
+        batch.set(newDocRef, newCategory);
 
         const mainCatRef = doc(db, 'mainCategories', mainCategoryId);
         const mainCat = get().mainCategories.find(mc => mc.id === mainCategoryId);
@@ -356,8 +376,8 @@ export const useAppStore = create<AppState>()(
       },
 
       addPaymentMethod: async (method) => {
-        const newId = `pm-${Date.now()}`;
-        await setDoc(doc(db, 'paymentMethods', newId), { ...method, id: newId });
+        const newDocRef = doc(collection(db, 'paymentMethods'));
+        await setDoc(newDocRef, { ...method, id: newDocRef.id });
       },
 
       updatePaymentMethod: async (id, updatedData) => {
@@ -366,6 +386,19 @@ export const useAppStore = create<AppState>()(
 
       deletePaymentMethod: async (id) => {
         await deleteDoc(doc(db, 'paymentMethods', id));
+      },
+      
+      addGateway: async (gateway) => {
+        const newDocRef = doc(collection(db, 'gateways'));
+        await setDoc(newDocRef, { ...gateway, id: newDocRef.id });
+      },
+
+      updateGateway: async (id, updatedData) => {
+        await updateDoc(doc(db, 'gateways', id), updatedData);
+      },
+
+      deleteGateway: async (id) => {
+        await deleteDoc(doc(db, 'gateways', id));
       },
     })
 );

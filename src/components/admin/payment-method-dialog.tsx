@@ -30,7 +30,6 @@ import Image from 'next/image';
 import { resizeImage } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
-import { Label } from '../ui/label';
 
 const paymentMethodSchema = z.object({
   name: z.string().min(1, 'Name is required.'),

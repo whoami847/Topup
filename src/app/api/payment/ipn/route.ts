@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 
 export async function POST(req: NextRequest) {
     try {
-        const body = Object.fromEntries(await req.formData());
+        const body = await req.json();
         
         // This might need adjustment based on the gateway.
         const tran_id = body.tran_id as string;
@@ -81,7 +81,6 @@ export async function POST(req: NextRequest) {
             } else {
                 // This is a product purchase.
                 // TODO: Here you would trigger the actual top-up for the player
-                // e.g., callTopUpAPI(orderData.productDetails.player_id, orderData.description);
             }
 
             // Commit all batched writes

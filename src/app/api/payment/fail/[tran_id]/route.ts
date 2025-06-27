@@ -19,7 +19,9 @@ export async function POST(
       status: 'FAILED',
     });
 
-    return NextResponse.redirect(`${process.env.CLIENT_URL}/payment/fail`);
+    // Using environment variable for client URL
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    return NextResponse.redirect(`${clientUrl}/payment/fail`);
 
   } catch (error) {
     console.error('Error updating order status to FAILED:', error);

@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/layout/bottom-nav';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'BurnerStore',
@@ -35,6 +36,7 @@ export default function RootLayout({
         <Footer />
         <BottomNav />
         <Toaster />
+        <Script src="https://rupantorpay.com/public/assets/js/checkout.js" strategy="afterInteractive" />
       </body>
     </html>
   );

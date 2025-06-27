@@ -13,7 +13,8 @@ import {
   Archive, 
   DollarSign, 
   ArrowRightLeft,
-  Landmark
+  Landmark,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,8 @@ const navLinks = [
   { href: '/admin/products', label: 'Products', icon: Archive },
   { href: '/admin/product-prices', label: 'Product Prices', icon: DollarSign },
   { href: '/admin/transactions', label: 'Transactions', icon: ArrowRightLeft },
-  { href: '/admin/payment-methods', label: 'Payment Methods', icon: Landmark },
+  { href: '/admin/payment-methods', label: 'Manual Methods', icon: Landmark },
+  { href: '/admin/gateways', label: 'Auto Gateways', icon: CreditCard },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

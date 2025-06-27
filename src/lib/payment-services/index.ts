@@ -16,7 +16,6 @@ export function getPaymentService(gateway: Gateway): PaymentService | null {
   }
   
   if (gatewayName.includes('rupantorpay')) {
-    // NOTE: This service is a placeholder and needs to be implemented.
     return rupantorPayService;
   }
   
