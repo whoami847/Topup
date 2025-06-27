@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/layout/header';
@@ -25,7 +26,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
-        <script src="https://payment.rupantorpay.com/checkout/v2/rupantorpay-checkout.js" async></script>
+        <script src="https://rupantorpay.com/public/assets/js/checkout.js" async></script>
       </head>
       <body className={cn('font-body antialiased min-h-screen flex flex-col bg-background')}>
         <Header />

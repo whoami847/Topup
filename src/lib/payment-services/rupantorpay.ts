@@ -22,14 +22,16 @@ class RupantorPayService implements PaymentService {
     const apiUrl = gateway.isLive ? LIVE_API_URL : SANDBOX_API_URL;
     console.log(`RupantorPay: Using API URL: ${apiUrl}`);
 
+    const baseUrl = 'https://9000-firebase-studio-1750858380475.cluster-xpmcxs2fjnhg6xvn446ubtgpio.cloudworkstations.dev';
+
     const payload = {
       amount: order.amount,
       fullname: userEmail.split('@')[0], // Using email part as a fallback for name
       email: userEmail,
       tran_id: order.id,
-      success_url: `${process.env.CLIENT_URL}/payment/success`,
-      cancel_url: `${process.env.CLIENT_URL}/payment/fail`,
-      webhook_url: `${process.env.CLIENT_URL}/api/payment/ipn`,
+      success_url: `${baseUrl}/payment/success`,
+      cancel_url: `${baseUrl}/payment/fail`,
+      webhook_url: `${baseUrl}/api/payment/ipn`,
       product_name: order.description,
       product_category: 'Digital Goods',
     };
