@@ -20,6 +20,9 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import { Landmark } from 'lucide-react';
 
+// This declares the function that will be available globally from the RupantorPay script
+declare const rupantorpayCheckOut: any;
+
 const formSchema = z.object({
   amount: z.coerce.number().min(50, { message: "Minimum top-up amount is ৳50." }),
 });
@@ -55,7 +58,7 @@ export function WalletTopUpForm() {
     try {
         const orderDetails = {
             date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
-            description: `Wallet Top-up`, // Simple description
+            description: `Wallet Top-up`,
             amount: values.amount,
             userId: currentUser.uid,
         };
@@ -69,15 +72,24 @@ export function WalletTopUpForm() {
         const data = await response.json();
 
         if (response.ok && data.url) {
-            window.location.href = data.url; // Redirect to payment gateway
+            // Check if the RupantorPay popup function is available
+            if (typeof rupantorpayCheckOut !== 'undefined') {
+                rupantorpayCheckOut(data.url); // Use the popup checkout
+            } else {
+                // Fallback to a simple redirect if the script isn't loaded
+                console.error("RupantorPay checkout script not loaded. Redirecting...");
+                window.location.href = data.url;
+            }
         } else {
             toast({ title: "Error", description: data.message || "Failed to initiate payment.", variant: "destructive" });
-            setIsSubmitting(false);
         }
     } catch (error) {
         console.error("Failed to initiate wallet top-up", error);
         toast({ title: "Error", description: "Failed to connect to the payment server.", variant: "destructive" });
-        setIsSubmitting(false);
+    } finally {
+        // Only set submitting to false on failure, as success will navigate away.
+        // The popup checkout handles its own lifecycle.
+        // We can add event listeners from their script if needed later.
     }
   }
 
