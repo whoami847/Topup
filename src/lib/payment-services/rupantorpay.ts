@@ -6,6 +6,7 @@ import type {
   PaymentInitiationResponse,
   PaymentValidationResponse,
 } from './types';
+import { URL } from 'url';
 
 // API Endpoints provided by the user.
 const LIVE_API_URL = 'https://payment.rupantorpay.com/api/payment/checkout';
@@ -17,21 +18,20 @@ class RupantorPayService implements PaymentService {
   async initiatePayment(
     order: Omit<Order, 'id' | 'status'> & { id: string },
     userEmail: string,
-    gateway: Gateway
+    gateway: Gateway,
+    baseUrl: string
   ): Promise<PaymentInitiationResponse> {
     const apiUrl = gateway.isLive ? LIVE_API_URL : SANDBOX_API_URL;
     console.log(`RupantorPay: Using API URL: ${apiUrl}`);
-
-    const baseUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
     const payload = {
       amount: order.amount,
       fullname: userEmail.split('@')[0], // Using email part as a fallback for name
       email: userEmail,
       tran_id: order.id,
-      success_url: `${baseUrl}/api/payment/success/${order.id}`,
-      cancel_url: `${baseUrl}/api/payment/cancel/${order.id}`,
-      webhook_url: `${baseUrl}/api/payment/ipn`, // Using the test URL provided by user
+      success_url: `${baseUrl}/payment/success`,
+      cancel_url: `${baseUrl}/payment/fail`,
+      webhook_url: `${baseUrl}/api/payment/ipn`,
       product_name: order.description,
       product_category: 'Digital Goods',
     };
@@ -39,13 +39,17 @@ class RupantorPayService implements PaymentService {
     console.log('RupantorPay: Initiating payment with payload:', payload);
 
     try {
+      // Extract hostname from the baseUrl for the X-CLIENT header.
+      const urlObject = new URL(baseUrl);
+      const clientHost = urlObject.hostname;
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'X-API-KEY': gateway.storePassword, // Your Store Password/Secret
-          'X-CLIENT': gateway.storeId,       // Your Store ID
+          'X-API-KEY': gateway.storePassword, // Store Password/Secret
+          'X-CLIENT': clientHost, // The domain name of your site
         },
         body: JSON.stringify(payload),
       });
@@ -100,7 +104,7 @@ class RupantorPayService implements PaymentService {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-API-KEY': gateway.storePassword,
-                'X-CLIENT': gateway.storeId,
+                'X-CLIENT': gateway.storeId, // As per docs, verification might need storeId. If it needs hostname, this should be changed.
             },
             body: JSON.stringify({ tran_id: tran_id }),
         });

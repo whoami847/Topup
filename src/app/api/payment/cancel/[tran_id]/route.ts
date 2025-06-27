@@ -19,9 +19,10 @@ export async function POST(
       status: 'CANCELLED',
     });
     
-    // Using environment variable for client URL
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    return NextResponse.redirect(`${clientUrl}/payment/fail?status=cancelled`);
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const host = req.headers.get('host');
+    const baseUrl = `${protocol}://${host}`;
+    return NextResponse.redirect(`${baseUrl}/payment/fail?status=cancelled`);
   } catch (error) {
     console.error('Error updating order status to CANCELLED:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });

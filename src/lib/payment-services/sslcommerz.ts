@@ -14,7 +14,8 @@ class SSLCommerzService implements PaymentService {
   async initiatePayment(
     order: Omit<Order, 'id' | 'status'> & { id: string },
     userEmail: string,
-    gateway: Gateway
+    gateway: Gateway,
+    baseUrl: string
   ): Promise<PaymentInitiationResponse> {
     console.log("SSLCommerz service is not fully implemented yet.");
     return Promise.resolve({ success: false, message: 'SSLCommerz is not configured.' });

@@ -6,6 +6,8 @@ export async function POST(
 ) {
   // This endpoint is just for redirecting the user.
   // The actual fulfillment should happen via the IPN endpoint for security.
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-  return NextResponse.redirect(`${clientUrl}/payment/success`);
+  const protocol = req.headers.get('x-forwarded-proto') || 'http';
+  const host = req.headers.get('host');
+  const baseUrl = `${protocol}://${host}`;
+  return NextResponse.redirect(`${baseUrl}/payment/success`);
 }

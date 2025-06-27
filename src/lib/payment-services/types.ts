@@ -37,7 +37,8 @@ export interface PaymentService {
   initiatePayment: (
     order: Omit<Order, 'id' | 'status'> & { id: string }, // The order object with a generated tran_id
     userEmail: string,
-    gateway: Gateway
+    gateway: Gateway,
+    baseUrl: string
   ) => Promise<PaymentInitiationResponse>;
 
   /**
