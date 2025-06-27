@@ -22,7 +22,7 @@ class RupantorPayService implements PaymentService {
     baseUrl: string
   ): Promise<PaymentInitiationResponse> {
     const apiUrl = gateway.isLive ? LIVE_API_URL : SANDBOX_API_URL;
-    console.log(`RupantorPay: Using API URL: ${apiUrl}`);
+    console.log(`RupantorPay Service: Using API URL: ${apiUrl}`);
 
     const payload = {
       amount: order.amount,
@@ -36,44 +36,50 @@ class RupantorPayService implements PaymentService {
       product_category: 'Digital Goods',
     };
     
-    console.log('RupantorPay: Initiating payment with payload:', payload);
+    console.log('RupantorPay Service: Payload being sent:', payload);
 
     try {
-      // Extract hostname from the baseUrl for the X-CLIENT header.
       const urlObject = new URL(baseUrl);
       const clientHost = urlObject.hostname;
 
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-API-KEY': gateway.storePassword,
+        'X-CLIENT': clientHost,
+      };
+
+      console.log('RupantorPay Service: Headers being sent (X-API-KEY is masked):', { ...headers, 'X-API-KEY': '********' });
+
+      console.log('RupantorPay Service: Making fetch request to API...');
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-API-KEY': gateway.storePassword, // Store Password/Secret
-          'X-CLIENT': clientHost, // The domain name of your site
-        },
+        headers,
         body: JSON.stringify(payload),
       });
 
       const responseBodyText = await response.text();
-      console.log(`RupantorPay: API response status: ${response.status}`, `Response Body: ${responseBodyText}`);
+      console.log(`RupantorPay Service: API Response Status: ${response.status}`);
+      console.log(`RupantorPay Service: API Raw Response Body: ${responseBodyText}`);
 
       if (!response.ok) {
+        console.error('RupantorPay Service: API request failed.');
         return { success: false, message: `Failed to connect to RupantorPay. Status: ${response.status}. ${responseBodyText}` };
       }
 
       const apiResponse = JSON.parse(responseBodyText);
 
       if (apiResponse && apiResponse.payment_url) {
-        console.log('RupantorPay: Successfully received payment_url.');
+        console.log('RupantorPay Service: Successfully received payment_url.');
         return { success: true, url: apiResponse.payment_url };
       } else {
         const errorMessage = apiResponse.message || 'Failed to get payment URL from RupantorPay.';
-        console.error("RupantorPay: API Error:", errorMessage, apiResponse);
+        console.error("RupantorPay Service: API Error - payment_url not found.", errorMessage, apiResponse);
         return { success: false, message: errorMessage };
       }
 
     } catch (error) {
-      console.error("RupantorPay: Initiation error:", error);
+      console.error("RupantorPay Service: An exception occurred during payment initiation:", error);
       let message = "Could not connect to RupantorPay service.";
       if (error instanceof Error) {
         message = error.message;
@@ -104,23 +110,21 @@ class RupantorPayService implements PaymentService {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-API-KEY': gateway.storePassword,
-                'X-CLIENT': gateway.storeId, // As per docs, verification might need storeId. If it needs hostname, this should be changed.
+                'X-CLIENT': gateway.storeId, 
             },
             body: JSON.stringify({ tran_id: tran_id }),
         });
 
         const verificationResult = await response.json();
         console.log('RupantorPay: Verification API response:', verificationResult);
-
-        // Assuming the verification response has a 'status' field.
-        // The value 'COMPLETED' is a guess. Please confirm with RupantorPay docs.
+        
         const isPaymentSuccess = verificationResult.status === 'COMPLETED';
 
         return {
             isValid: isPaymentSuccess,
             transactionId: tran_id,
             status: isPaymentSuccess ? 'COMPLETED' : 'FAILED',
-            paymentDetails: verificationResult, // Store the verified details
+            paymentDetails: verificationResult,
         };
 
     } catch (error) {
