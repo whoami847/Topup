@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,118 +18,121 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/lib/store';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import Image from 'next/image';
 import { Landmark } from 'lucide-react';
 
-// This declares the function that will be available globally from the RupantorPay script
-declare const rupantorpayCheckOut: any;
-
 const formSchema = z.object({
-  amount: z.coerce.number().min(50, { message: "Minimum top-up amount is ৳50." }),
+  amount: z.coerce.number().min(1, { message: "Amount must be greater than 0." }),
+  transactionId: z.string().min(5, { message: "Please enter a valid Transaction ID." }),
 });
 
 export function WalletTopUpForm() {
   const { toast } = useToast();
-  const { currentUser, setAuthDialogOpen, gateways } = useAppStore();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const { addTransaction, currentUser, setAuthDialogOpen, paymentMethods } = useAppStore();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: '' as any,
+      amount: undefined,
+      transactionId: '',
     },
   });
 
-  const enabledGateways = (gateways || []).filter(g => g.enabled);
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true);
     if (!currentUser) {
         toast({ title: "Login Required", description: "You must be logged in to top-up your wallet.", variant: "destructive" });
         setAuthDialogOpen(true);
-        setIsSubmitting(false);
         return;
     }
-    if (enabledGateways.length === 0) {
-        toast({ title: "No Gateway", description: "No payment gateway is enabled. Please contact support.", variant: "destructive" });
-        setIsSubmitting(false);
-        return;
-    }
-
     try {
-        const orderDetails = {
-            date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
-            description: `Wallet Top-up`,
-            amount: values.amount,
-            userId: currentUser.uid,
-        };
-
-        const response = await fetch('/api/payment/initiate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order: orderDetails, user: currentUser }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.url) {
-            // Check if the RupantorPay popup function is available
-            if (typeof rupantorpayCheckOut !== 'undefined') {
-                rupantorpayCheckOut(data.url); // Use the popup checkout
-            } else {
-                // Fallback to a simple redirect if the script isn't loaded
-                console.error("RupantorPay checkout script not loaded. Redirecting...");
-                window.location.href = data.url;
-            }
-        } else {
-            toast({ title: "Error", description: data.message || "Failed to initiate payment.", variant: "destructive" });
-        }
+      const newTransaction = {
+        date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
+        description: `Wallet Top-up Request (TrxID: ${values.transactionId})`,
+        amount: values.amount,
+        status: 'Pending' as const,
+      };
+      await addTransaction(newTransaction);
+      toast({
+        title: "Request Submitted!",
+        description: "Your top-up request has been received. Please wait for admin approval.",
+      });
+      form.reset();
     } catch (error) {
-        console.error("Failed to initiate wallet top-up", error);
-        toast({ title: "Error", description: "Failed to connect to the payment server.", variant: "destructive" });
-    } finally {
-        // Only set submitting to false on failure, as success will navigate away.
-        // The popup checkout handles its own lifecycle.
-        // We can add event listeners from their script if needed later.
+      console.error("Failed to submit top-up request", error);
+      toast({
+        title: "Submission Failed",
+        description: "An error occurred while submitting your request.",
+        variant: "destructive",
+      });
     }
   }
-
-  if (enabledGateways.length === 0) {
-      return (
-          <div className="text-center text-muted-foreground py-8 border rounded-lg">
-            <Landmark className="mx-auto h-10 w-10 mb-2" />
-            <p>No payment gateways are currently available.</p>
-            <p className="text-sm">Please contact support.</p>
-          </div>
-      )
-  }
+  
+  const enabledPaymentMethods = (paymentMethods || []).filter(m => m.enabled);
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount to Top-up (৳) *</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="Enter amount" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <Button 
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <h3 className="font-semibold text-lg text-center">Send money to any of the accounts below:</h3>
+        {enabledPaymentMethods.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {enabledPaymentMethods.map((method) => (
+                <Alert key={method.id} className="bg-secondary/50 border-secondary-foreground/10">
+                    <Image src={method.logoUrl} alt={method.name} width={24} height={24} className="absolute left-4 top-4 h-6 w-6" />
+                    <AlertTitle className="font-bold">{method.name} ({method.accountType})</AlertTitle>
+                    <AlertDescription className="font-mono text-base font-semibold text-primary/90 tracking-wider">
+                        {method.accountNumber}
+                    </AlertDescription>
+                </Alert>
+            ))}
+            </div>
+        ) : (
+            <div className="text-center text-muted-foreground py-8 border rounded-lg">
+                <Landmark className="mx-auto h-10 w-10 mb-2" />
+                <p>No manual payment methods are currently enabled.</p>
+                <p className="text-sm">Please contact support.</p>
+            </div>
+        )}
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Amount Sent (৳) *</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="Enter the amount you sent" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="transactionId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Transaction ID *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter the transaction ID from your payment app" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button 
             type="submit" 
             size="lg" 
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold" 
-            disabled={isSubmitting || enabledGateways.length === 0}
-        >
-          {isSubmitting ? 'Processing...' : 'Proceed to Payment'}
-        </Button>
-      </form>
-    </Form>
+            className="w-full" 
+            disabled={form.formState.isSubmitting || enabledPaymentMethods.length === 0}
+          >
+            {form.formState.isSubmitting ? 'Submitting...' : 'Submit Top-up Request'}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }

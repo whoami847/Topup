@@ -5,7 +5,6 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -31,7 +30,7 @@ import { QuantityInput } from "./ui/quantity-input";
 import { Separator } from "./ui/separator";
 import { useAppStore } from "@/lib/store";
 import { format } from 'date-fns';
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Wallet } from "lucide-react";
 
 const getValidationSchema = (category: TopUpCategory) => {
   let schemaObject: any = {
@@ -68,9 +67,8 @@ const getValidationSchema = (category: TopUpCategory) => {
 };
 
 export function TopUpForm({ category }: { category: TopUpCategory }) {
-  const router = useRouter();
   const { toast } = useToast();
-  const { currentUser, setAuthDialogOpen } = useAppStore();
+  const { currentUser, setAuthDialogOpen, purchaseWithBalance } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
@@ -132,30 +130,17 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
         date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
         description: `${values.quantity} x ${selectedProduct.name} - ${category.title}`,
         amount: totalPrice,
-        userId: currentUser.uid,
         productDetails: values, // Includes player_id etc.
     };
 
-    try {
-        const response = await fetch('/api/payment/initiate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order: orderDetails, user: currentUser }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.url) {
-            window.location.href = data.url; // Redirect to payment gateway
-        } else {
-            toast({ title: "Error", description: data.message || "Failed to initiate payment.", variant: "destructive" });
-            setIsSubmitting(false);
-        }
-    } catch(error) {
-        console.error("Payment initiation failed:", error);
-        toast({ title: "Error", description: "Could not connect to the payment server.", variant: "destructive" });
-        setIsSubmitting(false);
+    const result = await purchaseWithBalance(orderDetails);
+    if (result.success) {
+      toast({ title: "Success!", description: result.message });
+      form.reset(defaultFormValues);
+    } else {
+      toast({ title: "Purchase Failed", description: result.message, variant: "destructive" });
     }
+    setIsSubmitting(false);
   }
 
   const renderField = (fieldName: string) => {
@@ -337,7 +322,8 @@ export function TopUpForm({ category }: { category: TopUpCategory }) {
         </div>
 
         <Button type="submit" size="lg" className="w-full text-lg font-bold" disabled={isSubmitting}>
-          {isSubmitting ? 'Processing...' : 'Proceed to Pay'}
+          <Wallet className="mr-2 h-5 w-5" />
+          {isSubmitting ? 'Processing...' : 'Purchase with Wallet'}
         </Button>
       </form>
     </Form>
