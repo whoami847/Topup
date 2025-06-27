@@ -9,13 +9,15 @@ import type {
   PaymentInitiationResponse,
   PaymentValidationResponse,
 } from './types';
+import type { NextRequest } from 'next/server';
 
 class SSLCommerzService implements PaymentService {
   async initiatePayment(
     order: Omit<Order, 'id' | 'status'> & { id: string },
     userEmail: string,
     gateway: Gateway,
-    baseUrl: string
+    baseUrl: string,
+    req: NextRequest
   ): Promise<PaymentInitiationResponse> {
     console.log("SSLCommerz service is not fully implemented yet.");
     return Promise.resolve({ success: false, message: 'SSLCommerz is not configured.' });

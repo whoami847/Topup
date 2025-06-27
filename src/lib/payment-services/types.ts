@@ -1,6 +1,7 @@
 
 import type { Gateway } from '@/lib/gateways';
 import type { Order } from '@/lib/store';
+import type { NextRequest } from 'next/server';
 
 /**
  * The response from a payment initiation request.
@@ -38,7 +39,8 @@ export interface PaymentService {
     order: Omit<Order, 'id' | 'status'> & { id: string }, // The order object with a generated tran_id
     userEmail: string,
     gateway: Gateway,
-    baseUrl: string
+    baseUrl: string,
+    req: NextRequest
   ) => Promise<PaymentInitiationResponse>;
 
   /**

@@ -7,17 +7,18 @@ import type { Order } from '@/lib/store';
 import { getPaymentService } from '@/lib/payment-services';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://6000-firebase-studio-1750858380475.cluster-xpmcxs2fjnhg6xvn446ubtgpio.cloudworkstations.dev",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, X-API-KEY, X-CLIENT",
 };
 
 export async function OPTIONS() {
-  return new NextResponse(null, { headers: corsHeaders });
+  console.log('Handling CORS pre-flight request...');
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
 export async function POST(req: NextRequest) {
-    console.log('/api/payment/initiate: Received request.');
+    console.log('/api/payment/initiate: Received POST request.');
     try {
         console.log('/api/payment/initiate: Processing payment initiation...');
         const gatewaysRef = collection(db, 'gateways');
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
         const baseUrl = `${protocol}://${host}`;
         console.log('/api/payment/initiate: Callback base URL:', baseUrl);
 
-        const response = await paymentService.initiatePayment(newOrder, user.email, gateway, baseUrl);
+        const response = await paymentService.initiatePayment(newOrder, user.email, gateway, baseUrl, req);
         console.log('/api/payment/initiate: Payment service response received:', response);
 
         if (response.success && response.url) {

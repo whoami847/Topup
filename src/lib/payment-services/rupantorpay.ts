@@ -6,27 +6,28 @@ import type {
   PaymentInitiationResponse,
   PaymentValidationResponse,
 } from './types';
-import { URL } from 'url';
+import type { NextRequest } from 'next/server';
 
 // API Endpoints provided by the user.
 const LIVE_API_URL = 'https://payment.rupantorpay.com/api/payment/checkout';
-const SANDBOX_API_URL = 'https://sandbox.rupantorpay.com/api/payment/checkout'; // This is a guess. Please confirm with RupantorPay.
+const SANDBOX_API_URL = 'https://sandbox.rupantorpay.com/api/payment/checkout';
 const VERIFY_API_URL_LIVE = 'https://payment.rupantorpay.com/api/payment/verify';
-const VERIFY_API_URL_SANDBOX = 'https://sandbox.rupantorpay.com/api/payment/verify'; // This is a guess.
+const VERIFY_API_URL_SANDBOX = 'https://sandbox.rupantorpay.com/api/payment/verify';
 
 class RupantorPayService implements PaymentService {
   async initiatePayment(
     order: Omit<Order, 'id' | 'status'> & { id: string },
     userEmail: string,
     gateway: Gateway,
-    baseUrl: string
+    baseUrl: string,
+    req: NextRequest
   ): Promise<PaymentInitiationResponse> {
     const apiUrl = gateway.isLive ? LIVE_API_URL : SANDBOX_API_URL;
     console.log(`RupantorPay Service: Using API URL: ${apiUrl}`);
 
     const payload = {
       amount: order.amount,
-      fullname: userEmail.split('@')[0], // Using email part as a fallback for name
+      fullname: userEmail.split('@')[0],
       email: userEmail,
       tran_id: order.id,
       success_url: `${baseUrl}/payment/success`,
@@ -39,8 +40,7 @@ class RupantorPayService implements PaymentService {
     console.log('RupantorPay Service: Payload being sent:', payload);
 
     try {
-      const urlObject = new URL(baseUrl);
-      const clientHost = urlObject.hostname;
+      const clientHost = req.headers.get('host') || 'localhost';
 
       const headers = {
         'Content-Type': 'application/json',
