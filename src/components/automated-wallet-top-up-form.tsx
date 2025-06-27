@@ -33,7 +33,7 @@ export function AutomatedWalletTopUpForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: undefined,
+      amount: '' as any,
     },
   });
 
