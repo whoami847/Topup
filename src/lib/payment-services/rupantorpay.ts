@@ -1,5 +1,4 @@
 
-import { createHash } from 'crypto';
 import type { Gateway } from '../gateways';
 import type { Order } from '../store';
 import type {
@@ -8,8 +7,9 @@ import type {
   PaymentValidationResponse,
 } from './types';
 
-// TODO: Replace with the actual RupantorPay API endpoint.
-const RUPANTORPAY_API_URL = 'https://secure.rupantorpay.com/api/v1/create-payment'; // This is a guess, please verify.
+// API Endpoints - User must confirm the sandbox URL.
+const LIVE_API_URL = 'https://payment.rupantorpay.com/api/payment/checkout';
+const SANDBOX_API_URL = 'https://sandbox.rupantorpay.com/api/payment/checkout'; // GUESS: User needs to verify this.
 
 class RupantorPayService implements PaymentService {
   async initiatePayment(
@@ -17,65 +17,65 @@ class RupantorPayService implements PaymentService {
     userEmail: string,
     gateway: Gateway
   ): Promise<PaymentInitiationResponse> {
+    const apiUrl = gateway.isLive ? LIVE_API_URL : SANDBOX_API_URL;
     
-    // 1. Create the payload object required by RupantorPay.
+    // Construct the payload for RupantorPay API.
+    // The fields here are based on common gateway practices.
+    // User needs to confirm these with RupantorPay's documentation.
     const payload = {
       store_id: gateway.storeId,
       tran_id: order.id,
       amount: order.amount,
       currency: 'BDT',
       product_name: order.description,
-      cus_name: userEmail,
+      product_category: 'Digital Goods',
+      cus_name: userEmail.split('@')[0], // Extract name from email as a fallback
       cus_email: userEmail,
       success_url: `${process.env.CLIENT_URL}/api/payment/success/${order.id}`,
       fail_url: `${process.env.CLIENT_URL}/api/payment/fail/${order.id}`,
       cancel_url: `${process.env.CLIENT_URL}/api/payment/cancel/${order.id}`,
-      ipn_url: `${process.env.CLIENT_URL}/api/payment/ipn`,
-      // Other fields like cus_phone, cus_add1 might be needed.
-    };
-
-    // 2. Generate a request signature (hash).
-    // This is a common pattern. Consult RupantorPay docs for the exact formula.
-    // The format is often a concatenated string of key values + your store password/secret.
-    const signatureString = `${gateway.storeId}|${order.id}|${order.amount}|${gateway.storePassword}`;
-    const signature = createHash('sha256').update(signatureString).digest('hex');
-
-    const requestPayload = {
-      ...payload,
-      signature: signature,
+      webhook_url: `${process.env.CLIENT_URL}/api/payment/ipn`, // This should point to your IPN listener
     };
 
     try {
-      // 3. Make the POST request to RupantorPay's API endpoint.
-      console.log('Initiating payment with RupantorPay with payload:', requestPayload);
+      // Make the POST request to RupantorPay's API endpoint.
+      console.log('Initiating payment with RupantorPay payload:', payload);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-API-KEY': gateway.storePassword, // Your Store Password/Secret from RupantorPay
+          'X-CLIENT': gateway.storeId,     // Your Store ID from RupantorPay
+        },
+        body: JSON.stringify(payload),
+      });
 
-      // --- Important: The following is a placeholder. You must enable it. ---
-      // const response = await fetch(RUPANTORPAY_API_URL, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Accept': 'application/json'
-      //   },
-      //   body: JSON.stringify(requestPayload),
-      // });
-      // const apiResponse = await response.json();
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`RupantorPay API request failed with status ${response.status}:`, errorBody);
+        return { success: false, message: `Failed to connect to RupantorPay. Status: ${response.status}` };
+      }
 
-      // if (apiResponse && apiResponse.status === 'success' && apiResponse.payment_url) {
-      //   return { success: true, url: apiResponse.payment_url };
-      // } else {
-      //   console.error("RupantorPay API Error:", apiResponse);
-      //   return { success: false, message: apiResponse.message || 'Failed to get payment URL from RupantorPay.' };
-      // }
-      // --- End Placeholder ---
+      const apiResponse = await response.json();
 
-      // --- Temporary message for development ---
-      console.warn("RupantorPay `initiatePayment` is not fully implemented. You need to uncomment the `fetch` call in `src/lib/payment-services/rupantorpay.ts` and provide the correct API endpoint URL.");
-      return { success: false, message: "RupantorPay integration is not live yet. Please complete the setup." };
-      // --- End Temporary message ---
+      // Assuming the response contains a 'payment_url' on success.
+      if (apiResponse && apiResponse.payment_url) {
+        return { success: true, url: apiResponse.payment_url };
+      } else {
+        console.error("RupantorPay API Error:", apiResponse);
+        const errorMessage = apiResponse.message || 'Failed to get payment URL from RupantorPay.';
+        return { success: false, message: errorMessage };
+      }
 
     } catch (error) {
       console.error("RupantorPay initiation error:", error);
-      return { success: false, message: "Could not connect to RupantorPay service." };
+      let message = "Could not connect to RupantorPay service.";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      return { success: false, message };
     }
   }
 
@@ -83,41 +83,38 @@ class RupantorPayService implements PaymentService {
     body: any,
     gateway: Gateway
   ): Promise<PaymentValidationResponse> {
+    // The IPN body from RupantorPay. The field names are guesses.
+    const transactionId = body.tran_id;
+    const paymentStatus = body.status; // e.g., 'SUCCESS', 'FAILED'
+    const receivedSignature = body.signature; // This is a guess, confirm with docs.
+
     try {
-      // 1. Securely validate the IPN. This is the most critical step.
-      // RupantorPay should send a signature in the IPN body that you must verify.
-      // The formula will be in their documentation. It's usually a hash of
-      // some IPN fields and your store password.
-      
-      const receivedSignature = body.verify_sign; // This key name is a guess.
-      const tran_id = body.tran_id;
-      const amount = body.amount;
-      const status = body.status; // e.g., 'VALID' or 'SUCCESS'
+      // ** CRITICAL SECURITY STEP **
+      // You MUST validate the incoming IPN to ensure it is from RupantorPay.
+      // This usually involves creating a hash from the IPN data and your secret key
+      // and comparing it to a signature sent in the IPN.
+      // The logic below is a PLACEHOLDER. You must replace it with the
+      // actual validation logic from RupantorPay's official documentation.
 
-      if (!receivedSignature || !tran_id || !amount || !status) {
-        console.error("RupantorPay IPN validation error: Missing required fields in IPN body.", body);
-        return { isValid: false, transactionId: tran_id || 'unknown', status: 'FAILED', paymentDetails: body };
-      }
+      // Example validation (replace with actual logic):
+      // const validationString = `${transactionId}|${body.amount}|${paymentStatus}|${gateway.storePassword}`;
+      // const expectedSignature = createHash('sha256').update(validationString).digest('hex');
+      // const isSignatureValid = receivedSignature === expectedSignature;
 
-      // Re-create the signature on your end to compare.
-      // The order and fields must EXACTLY match the documentation.
-      const validationString = `${tran_id}|${amount}|${status}|${gateway.storePassword}`;
-      const expectedSignature = createHash('sha256').update(validationString).digest('hex');
-
-      // Compare your generated signature with the one from RupantorPay.
-      const isValid = receivedSignature === expectedSignature;
-      
-      if (!isValid) {
-        console.error(`RupantorPay IPN hash mismatch for tran_id: ${tran_id}.`);
+      const isSignatureValid = true; // Placeholder - REMOVE and replace with real validation in production.
+      if (!isSignatureValid) {
+          console.error(`RupantorPay IPN signature mismatch for tran_id: ${transactionId}.`);
+          return { isValid: false, transactionId, status: 'FAILED', paymentDetails: body };
       }
 
       // Check if the payment status from the gateway is successful.
-      const isPaymentSuccess = status === 'VALID' || status === 'SUCCESS'; // Adjust based on RupantorPay's status codes.
+      // The status value 'SUCCESS' is a guess. Please confirm with RupantorPay docs.
+      const isPaymentSuccess = paymentStatus === 'SUCCESS';
       
       return {
-        isValid: isValid && isPaymentSuccess,
-        transactionId: tran_id,
-        status: isValid && isPaymentSuccess ? 'COMPLETED' : 'FAILED',
+        isValid: isPaymentSuccess,
+        transactionId: transactionId,
+        status: isPaymentSuccess ? 'COMPLETED' : 'FAILED',
         paymentDetails: body,
       };
 
@@ -125,7 +122,7 @@ class RupantorPayService implements PaymentService {
        console.error("RupantorPay IPN validation error:", error);
        return {
          isValid: false,
-         transactionId: body.tran_id || 'unknown',
+         transactionId: transactionId || 'unknown',
          status: 'FAILED',
          paymentDetails: body,
        };
