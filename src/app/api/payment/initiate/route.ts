@@ -8,14 +8,13 @@ import { getPaymentService } from '@/lib/payment-services';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, X-API-KEY, X-CLIENT",
 };
 
 export async function OPTIONS() {
   return new NextResponse(null, { headers: corsHeaders });
 }
-
 
 export async function POST(req: NextRequest) {
     try {
