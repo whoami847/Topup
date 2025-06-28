@@ -22,9 +22,6 @@ import { CreditCard, Landmark } from 'lucide-react';
 
 const formSchema = z.object({
   amount: z.coerce.number().min(1, { message: "Amount must be greater than 0." }),
-  customer_name: z.string().min(1, { message: "Name is required." }),
-  customer_email: z.string().email({ message: "A valid email is required." }),
-  customer_phone: z.string().min(1, { message: "Phone number is required." }),
 });
 
 export function AutomatedWalletTopUpForm() {
@@ -35,33 +32,35 @@ export function AutomatedWalletTopUpForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: '' as any,
-      customer_name: '',
-      customer_email: '',
-      customer_phone: '',
+      amount: '',
     },
   });
-  
-  React.useEffect(() => {
-    if (currentUser?.email) {
-      form.setValue('customer_email', currentUser.email);
-    }
-  }, [currentUser, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    if (!currentUser) {
-        toast({ title: "Login Required", description: "You must be logged in to top-up your wallet.", variant: "destructive" });
-        setAuthDialogOpen(true);
-        setIsSubmitting(false);
-        return;
+    if (!currentUser || !currentUser.email) {
+      toast({
+        title: "Login Required",
+        description: "You must be logged in to top-up your wallet.",
+        variant: "destructive",
+      });
+      setAuthDialogOpen(true);
+      setIsSubmitting(false);
+      return;
     }
+
+    const payload = {
+      amount: values.amount,
+      customer_name: currentUser.email.split('@')[0],
+      customer_email: currentUser.email,
+      customer_phone: '01000000000', // Placeholder phone
+    };
     
     try {
         const response = await fetch('/api/payment/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
+            body: JSON.stringify(payload),
         });
 
         const result = await response.json();
@@ -92,7 +91,7 @@ export function AutomatedWalletTopUpForm() {
           <CreditCard className="h-4 w-4" />
           <AlertTitle className="font-bold">Pay Securely</AlertTitle>
           <AlertDescription>
-            Enter the amount and your details. You will be redirected to a secure page to complete your payment.
+            Enter the amount. You will be redirected to a secure page to complete your payment.
           </AlertDescription>
       </Alert>
       
@@ -114,45 +113,6 @@ export function AutomatedWalletTopUpForm() {
                 <FormLabel>Top-up Amount (৳) *</FormLabel>
                 <FormControl>
                   <Input type="number" placeholder="Enter the amount to add" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="customer_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter your full name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="customer_email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email *</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="Enter your email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="customer_phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Number *</FormLabel>
-                <FormControl>
-                  <Input type="tel" placeholder="Enter your phone number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
