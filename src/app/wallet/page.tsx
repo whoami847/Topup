@@ -36,6 +36,13 @@ export default function WalletPage() {
     .filter((t) => t.status === 'Pending' && t.amount > 0)
     .reduce((sum, t) => sum + t.amount, 0);
 
+  const walletTransactions = React.useMemo(() => {
+    if (!currentUser) return [];
+    // Filter to only show transactions related to adding funds to the wallet.
+    return transactions.filter(t => t.description.toLowerCase().includes('wallet top-up'));
+  }, [transactions, currentUser]);
+
+
   if (isAuthLoading) {
     return <PageSkeleton />;
   }
@@ -63,16 +70,16 @@ export default function WalletPage() {
             </div>
         </Link>
         
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="single" collapsible className="w-full" defaultValue="transactions">
           <AccordionItem value="transactions" className="border-none rounded-lg bg-secondary/50">
             <AccordionTrigger className="p-4 hover:no-underline font-semibold text-lg data-[state=open]:border-b">
               <div className="flex items-center gap-4">
                 <List className="h-6 w-6 text-primary" />
-                <span>Transactions</span>
+                <span>Top-up History</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="p-4 pt-2">
-                <TransactionList transactions={transactions} />
+                <TransactionList transactions={walletTransactions} />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
