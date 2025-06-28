@@ -126,19 +126,41 @@ export const useAppStore = create<AppState>()(
           set({ isAuthLoading: true });
           
           const seedDataIfNeeded = async () => {
-            const mainCatRef = collection(db, 'mainCategories');
-            const snapshot = await getDocs(mainCatRef);
-            if (snapshot.empty) {
-                console.log('Database empty, seeding initial product data...');
-                const batch = writeBatch(db);
-                initialMainCategories.forEach(cat => {
-                    batch.set(doc(db, 'mainCategories', cat.id), cat);
-                });
-                initialTopUpCategories.forEach(cat => {
-                    batch.set(doc(db, 'topUpCategories', cat.id), cat);
-                });
-                await batch.commit();
-                console.log('Data seeding complete.');
+            try {
+                // Seed Product Data
+                const mainCatRef = collection(db, 'mainCategories');
+                const mainCatSnapshot = await getDocs(mainCatRef);
+                if (mainCatSnapshot.empty) {
+                    console.log('Database empty, seeding initial product data...');
+                    const batch = writeBatch(db);
+                    initialMainCategories.forEach(cat => {
+                        batch.set(doc(db, 'mainCategories', cat.id), cat);
+                    });
+                    initialTopUpCategories.forEach(cat => {
+                        batch.set(doc(db, 'topUpCategories', cat.id), cat);
+                    });
+                    await batch.commit();
+                    console.log('Product data seeding complete.');
+                }
+
+                // Seed Gateway Data
+                const gatewayRef = collection(db, 'gateways');
+                const gatewaySnapshot = await getDocs(gatewayRef);
+                if (gatewaySnapshot.empty) {
+                    console.log('No gateways found, seeding default RupantorPay gateway...');
+                    const gatewayId = `rupantorpay-${Date.now()}`;
+                    const newGateway: Gateway = {
+                        id: gatewayId,
+                        name: 'RupantorPay',
+                        storePassword: '3FIUryatXurKtWRITL7vflucojAVWXjo7I6c7hKW6sky5wvKfK',
+                        isLive: false, // Default to sandbox mode for safety
+                        enabled: true,
+                    };
+                    await setDoc(doc(db, 'gateways', gatewayId), newGateway);
+                    console.log('Default gateway seeded successfully.');
+                }
+            } catch (error) {
+                console.error("Error seeding data:", error);
             }
           };
 
