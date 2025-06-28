@@ -29,7 +29,6 @@ import { auth, db } from './firebase';
 import { initialMainCategories, initialTopUpCategories } from './product-data';
 import type { MainCategory, TopUpCategory, Product } from './products';
 import type { PaymentMethod } from './payments';
-import type { Gateway } from './gateways';
 
 export type Order = {
   id: string;
@@ -71,7 +70,6 @@ type AppState = {
   mainCategories: MainCategory[];
   topUpCategories: TopUpCategory[];
   paymentMethods: PaymentMethod[];
-  gateways: Gateway[];
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthDialogOpen: boolean;
@@ -96,9 +94,6 @@ type AppState = {
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => Promise<void>;
   updatePaymentMethod: (id: string, method: Partial<Omit<PaymentMethod, 'id'>>) => Promise<void>;
   deletePaymentMethod: (id: string) => Promise<void>;
-  addGateway: (gateway: Omit<Gateway, 'id'>) => Promise<void>;
-  updateGateway: (id: string, gateway: Partial<Omit<Gateway, 'id'>>) => Promise<void>;
-  deleteGateway: (id: string) => Promise<void>;
 };
 
 let unsubscribers: (() => void)[] = [];
@@ -116,7 +111,6 @@ export const useAppStore = create<AppState>()(
       mainCategories: [],
       topUpCategories: [],
       paymentMethods: [],
-      gateways: [],
       currentUser: null,
       isAuthLoading: true,
       isAuthDialogOpen: false,
@@ -157,12 +151,9 @@ export const useAppStore = create<AppState>()(
            const unsubPaymentMethods = onSnapshot(collection(db, 'paymentMethods'), snapshot => {
               set({ paymentMethods: snapshot.docs.map(doc => ({ ...doc.data() } as PaymentMethod)) });
           });
-           const unsubGateways = onSnapshot(collection(db, 'gateways'), snapshot => {
-              set({ gateways: snapshot.docs.map(doc => ({ ...doc.data() } as Gateway)) });
-          });
           
           const unsubAuth = onAuthStateChanged(auth, user => {
-              const staticUnsubs = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
+              const staticUnsubs = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubAuth];
               // Detach previous user-specific listeners
               unsubscribers = unsubscribers.filter(unsub => !staticUnsubs.includes(unsub));
               cleanupListeners();
@@ -197,7 +188,7 @@ export const useAppStore = create<AppState>()(
               }
               set({ isAuthLoading: false });
           });
-          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
+          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubAuth];
       },
 
       setAuthDialogOpen: (open) => set({ isAuthDialogOpen: open }),
@@ -388,17 +379,5 @@ export const useAppStore = create<AppState>()(
         await deleteDoc(doc(db, 'paymentMethods', id));
       },
       
-      addGateway: async (gateway) => {
-        const newDocRef = doc(collection(db, 'gateways'));
-        await setDoc(newDocRef, { ...gateway, id: newDocRef.id });
-      },
-
-      updateGateway: async (id, updatedData) => {
-        await updateDoc(doc(db, 'gateways', id), updatedData);
-      },
-
-      deleteGateway: async (id) => {
-        await deleteDoc(doc(db, 'gateways', id));
-      },
     })
 );

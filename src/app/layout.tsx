@@ -36,7 +36,6 @@ export default function RootLayout({
         <Footer />
         <BottomNav />
         <Toaster />
-        <Script src="https://rupantorpay.com/public/assets/js/checkout.js" strategy="afterInteractive" />
       </body>
     </html>
   );

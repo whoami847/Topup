@@ -60,7 +60,7 @@ export default function AdminDashboardPage() {
         { href: '/admin/products', label: 'Products', icon: Archive },
         { href: '/admin/product-prices', label: 'Product Prices', icon: DollarSign },
         { href: '/admin/transactions', label: 'Transactions', icon: ArrowRightLeft },
-        { href: '/admin/gateways', label: 'Gateways', icon: Landmark },
+        { href: '/admin/payment-methods', label: 'Payment Methods', icon: Landmark },
         { href: '/admin/settings', label: 'Settings', icon: Settings },
     ];
 
