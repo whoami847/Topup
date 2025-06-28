@@ -93,7 +93,6 @@ export default function AdminGatewaysPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Gateway Name</TableHead>
-                <TableHead>Store ID</TableHead>
                 <TableHead>Mode</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -104,12 +103,8 @@ export default function AdminGatewaysPage() {
                 gateways.map((gateway) => (
                   <TableRow key={gateway.id}>
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <Image src={gateway.logoUrl} alt={gateway.name} width={40} height={40} className="rounded-md object-contain" />
-                        <span>{gateway.name}</span>
-                      </div>
+                        {gateway.name}
                     </TableCell>
-                    <TableCell>{gateway.storeId}</TableCell>
                     <TableCell>
                       <Badge variant={gateway.isLive ? 'destructive' : 'secondary'}>
                         {gateway.isLive ? 'Live' : 'Sandbox'}
@@ -142,7 +137,7 @@ export default function AdminGatewaysPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No payment gateways found.
                   </TableCell>
                 </TableRow>

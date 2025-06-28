@@ -28,6 +28,7 @@ const navLinks = [
   { href: '/admin/product-prices', label: 'Product Prices', icon: DollarSign },
   { href: '/admin/transactions', label: 'Transactions', icon: ArrowRightLeft },
   { href: '/admin/payment-methods', label: 'Payment Methods', icon: Landmark },
+  { href: '/admin/gateways', label: 'Gateways', icon: CreditCard },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

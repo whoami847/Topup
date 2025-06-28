@@ -2,10 +2,7 @@
 export type Gateway = {
   id: string;
   name: string;
-  logoUrl: string;
-  imageHint: string;
-  storeId: string;
-  storePassword: string;
+  accessToken: string;
   isLive: boolean;
   enabled: boolean;
 };

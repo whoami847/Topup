@@ -13,11 +13,11 @@ export default function PaymentSuccessPage() {
           <CheckCircle2 className="h-20 w-20 text-green-500" />
           <h1 className="text-3xl font-bold">Payment Successful!</h1>
           <p className="text-muted-foreground">
-            Thank you for your purchase! Your top-up is being processed and will be delivered to your account shortly. You can check the status in your order history.
+            Thank you for your purchase! Your wallet has been topped up successfully. You can check the updated balance and transaction history in your wallet page.
           </p>
           <div className="flex gap-4 mt-4">
-            <Link href="/orders" passHref>
-              <Button size="lg">View My Orders</Button>
+            <Link href="/wallet" passHref>
+              <Button size="lg">Go to My Wallet</Button>
             </Link>
             <Link href="/" passHref>
               <Button size="lg" variant="outline">Continue Shopping</Button>

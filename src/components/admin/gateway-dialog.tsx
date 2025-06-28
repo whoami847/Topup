@@ -26,16 +26,12 @@ import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/lib/store';
 import type { Gateway } from '@/lib/gateways';
 import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
-import { resizeImage } from '@/lib/utils';
 import { Switch } from '../ui/switch';
 import { PasswordInput } from '../ui/password-input';
 
 const gatewaySchema = z.object({
   name: z.string().min(1, 'Gateway Name is required.'),
-  logoUrl: z.string().min(1, 'Logo is required.'),
-  storeId: z.string().min(1, 'Store ID is required.'),
-  storePassword: z.string().min(1, 'Store Password is required.'),
+  accessToken: z.string().min(1, 'Access Token is required.'),
   isLive: z.boolean(),
   enabled: z.boolean(),
 });
@@ -52,15 +48,12 @@ interface GatewayDialogProps {
 export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: GatewayDialogProps) {
   const { addGateway, updateGateway } = useAppStore();
   const { toast } = useToast();
-  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
 
   const form = useForm<GatewayFormValues>({
     resolver: zodResolver(gatewaySchema),
     defaultValues: {
-      name: '',
-      logoUrl: '',
-      storeId: '',
-      storePassword: '',
+      name: 'RupantorPay',
+      accessToken: '',
       isLive: false,
       enabled: true,
     },
@@ -71,23 +64,17 @@ export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: Gate
       if (gateway) {
         form.reset({
           name: gateway.name,
-          logoUrl: gateway.logoUrl,
-          storeId: gateway.storeId,
-          storePassword: gateway.storePassword,
+          accessToken: gateway.accessToken,
           isLive: gateway.isLive,
           enabled: gateway.enabled,
         });
-        setImagePreview(gateway.logoUrl);
       } else {
         form.reset({
-          name: '',
-          logoUrl: '',
-          storeId: '',
-          storePassword: '',
+          name: 'RupantorPay',
+          accessToken: '',
           isLive: false,
           enabled: true,
         });
-        setImagePreview(null);
       }
     }
   }, [gateway, form, isOpen]);
@@ -98,11 +85,7 @@ export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: Gate
         updateGateway(gateway.id, data);
         toast({ title: 'Success', description: 'Gateway updated successfully.' });
       } else {
-        const newGatewayData: Omit<Gateway, 'id'> = {
-            ...data,
-            imageHint: data.name.toLowerCase(),
-        };
-        addGateway(newGatewayData);
+        addGateway(data);
         toast({ title: 'Success', description: 'Gateway created successfully.' });
       }
       onSuccess();
@@ -129,52 +112,7 @@ export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: Gate
                 <FormItem>
                   <FormLabel>Gateway Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., RupantorPay" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="logoUrl"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Logo</FormLabel>
-                  <FormControl>
-                    <div>
-                      {imagePreview ? (
-                        <Image
-                          src={imagePreview}
-                          alt="Logo Preview"
-                          width={128}
-                          height={64}
-                          className="w-32 h-16 object-contain rounded-md mb-2 border p-1"
-                        />
-                      ) : (
-                        <div className="w-32 h-16 flex items-center justify-center bg-muted rounded-md mb-2 border">
-                          <span className="text-xs text-muted-foreground">No Logo</span>
-                        </div>
-                      )}
-                      <Input
-                        type="file"
-                        accept="image/png, image/jpeg, image/webp"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            try {
-                              const dataUrl = await resizeImage(file, 256, 128);
-                              form.setValue('logoUrl', dataUrl, { shouldValidate: true });
-                              setImagePreview(dataUrl);
-                            } catch (error) {
-                                console.error("Image processing failed", error);
-                                toast({ title: 'Error', description: 'Could not process image. Please try another one.', variant: 'destructive' });
-                            }
-                          }
-                        }}
-                        className="max-w-xs"
-                      />
-                    </div>
+                    <Input placeholder="e.g., RupantorPay" {...field} disabled />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,25 +120,12 @@ export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: Gate
             />
             <FormField
               control={form.control}
-              name="storeId"
+              name="accessToken"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Store ID</FormLabel>
+                  <FormLabel>Access Token / Secret</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter Store ID" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="storePassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Store Password / Secret</FormLabel>
-                  <FormControl>
-                    <PasswordInput placeholder="Enter Store Password" {...field} />
+                    <PasswordInput placeholder="Enter Access Token" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

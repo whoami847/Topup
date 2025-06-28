@@ -17,12 +17,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/lib/store';
-import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { CreditCard, Landmark } from 'lucide-react';
 
 const formSchema = z.object({
   amount: z.coerce.number().min(1, { message: "Amount must be greater than 0." }),
+  customer_name: z.string().min(1, { message: "Name is required." }),
+  customer_email: z.string().email({ message: "A valid email is required." }),
+  customer_phone: z.string().min(1, { message: "Phone number is required." }),
 });
 
 export function AutomatedWalletTopUpForm() {
@@ -33,9 +35,18 @@ export function AutomatedWalletTopUpForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: '' as any,
+      amount: undefined,
+      customer_name: '',
+      customer_email: '',
+      customer_phone: '',
     },
   });
+  
+  React.useEffect(() => {
+    if (currentUser?.email) {
+      form.setValue('customer_email', currentUser.email);
+    }
+  }, [currentUser, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -47,30 +58,16 @@ export function AutomatedWalletTopUpForm() {
     }
     
     try {
-        const orderPayload = {
-            order: {
-                date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
-                description: 'Wallet Top-up',
-                amount: values.amount,
-            },
-            user: currentUser,
-        };
-        
         const response = await fetch('/api/payment/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderPayload),
+            body: JSON.stringify(values),
         });
 
         const result = await response.json();
 
-        if (response.ok && result.url) {
-            if (window.rupantorpayCheckOut) {
-                window.rupantorpayCheckOut(result.url);
-            } else {
-                 // Fallback for when script is not loaded
-                window.location.href = result.url;
-            }
+        if (response.ok && result.payment_url) {
+            window.location.href = result.payment_url;
         } else {
             throw new Error(result.message || 'Failed to initiate payment.');
         }
@@ -95,7 +92,7 @@ export function AutomatedWalletTopUpForm() {
           <CreditCard className="h-4 w-4" />
           <AlertTitle className="font-bold">Pay Securely</AlertTitle>
           <AlertDescription>
-            Enter the amount you wish to add to your wallet. You will be redirected to a secure payment page to complete your transaction.
+            Enter the amount and your details. You will be redirected to a secure page to complete your payment.
           </AlertDescription>
       </Alert>
       
@@ -108,7 +105,7 @@ export function AutomatedWalletTopUpForm() {
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
             name="amount"
@@ -117,6 +114,45 @@ export function AutomatedWalletTopUpForm() {
                 <FormLabel>Top-up Amount (৳) *</FormLabel>
                 <FormControl>
                   <Input type="number" placeholder="Enter the amount to add" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="customer_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter your full name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="customer_email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email *</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="Enter your email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="customer_phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number *</FormLabel>
+                <FormControl>
+                  <Input type="tel" placeholder="Enter your phone number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
