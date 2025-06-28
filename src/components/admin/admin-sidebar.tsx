@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAppStore } from '@/lib/store';
+import React from 'react';
 
 const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
@@ -36,6 +38,21 @@ const navLinks = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { orders, transactions } = useAppStore();
+
+  const getNotificationCount = (label: string) => {
+    if (label === 'Orders') {
+        return orders
+            .filter(order => !order.description.toLowerCase().includes('wallet top-up'))
+            .filter(o => o.status === 'PENDING').length;
+    }
+    if (label === 'Wallet Top-ups') {
+        return transactions.filter(t => 
+            t.description.toLowerCase().includes('wallet top-up request') && t.status === 'Pending'
+        ).length;
+    }
+    return 0;
+  }
 
   return (
     <aside className="hidden w-64 flex-col border-r bg-background p-4 md:flex">
@@ -46,6 +63,8 @@ export function AdminSidebar() {
       <nav className="flex flex-1 flex-col gap-2 overflow-y-auto">
         {navLinks.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
+          const notificationCount = getNotificationCount(label);
+
           return (
             <Link
               key={label}
@@ -56,7 +75,12 @@ export function AdminSidebar() {
               )}
             >
               <Icon className="h-5 w-5" />
-              {label}
+              <span className="flex-grow">{label}</span>
+              {notificationCount > 0 && (
+                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-semibold">
+                    {notificationCount}
+                 </span>
+              )}
             </Link>
           );
         })}

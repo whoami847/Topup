@@ -36,9 +36,14 @@ const DashboardStatCard = ({ title, value, icon: Icon, description, formatAsCurr
   </Card>
 );
 
-const QuickNavCard = ({ href, icon: Icon, label }) => (
-    <Link href={href} className="block h-full">
-      <Card className="p-4 h-full flex flex-col items-center justify-center gap-2 text-center text-muted-foreground hover:text-primary hover:bg-primary/5 hover:border-primary transition-colors duration-200">
+const QuickNavCard = ({ href, icon: Icon, label, notificationCount = 0 }) => (
+    <Link href={href} className="block h-full relative group">
+      <Card className="p-4 h-full flex flex-col items-center justify-center gap-2 text-center text-muted-foreground group-hover:text-primary group-hover:bg-primary/5 group-hover:border-primary transition-colors duration-200">
+        {notificationCount > 0 && (
+            <div className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                {notificationCount}
+            </div>
+        )}
         <Icon className="h-8 w-8" />
         <span className="text-sm font-semibold">{label}</span>
       </Card>
@@ -47,7 +52,7 @@ const QuickNavCard = ({ href, icon: Icon, label }) => (
 
 
 export default function AdminDashboardPage() {
-    const { orders, users } = useAppStore();
+    const { orders, users, transactions } = useAppStore();
     const [isClient, setIsClient] = React.useState(false);
     
     React.useEffect(() => {
@@ -68,12 +73,33 @@ export default function AdminDashboardPage() {
       { href: '/admin/settings', label: 'Settings', icon: Settings },
     ];
 
-    const { totalRevenue, totalOrders, weeklySalesData, totalUsers } = React.useMemo(() => {
-        if (!isClient) return { totalRevenue: 0, totalOrders: 0, weeklySalesData: [], totalUsers: 0 };
+    const { 
+        totalRevenue, 
+        totalOrders, 
+        weeklySalesData, 
+        totalUsers,
+        pendingProductOrdersCount,
+        pendingWalletRequestsCount,
+    } = React.useMemo(() => {
+        if (!isClient) return { 
+            totalRevenue: 0, 
+            totalOrders: 0, 
+            weeklySalesData: [], 
+            totalUsers: 0,
+            pendingProductOrdersCount: 0,
+            pendingWalletRequestsCount: 0,
+        };
 
         const totalRevenue = orders.reduce((sum, order) => sum + order.amount, 0);
         const totalOrders = orders.length;
         const totalUsers = users.length;
+
+        const productOrders = orders.filter(order => !order.description.toLowerCase().includes('wallet top-up'));
+        const pendingProductOrdersCount = productOrders.filter(o => o.status === 'PENDING').length;
+
+        const pendingWalletRequestsCount = transactions.filter(t => 
+            t.description.toLowerCase().includes('wallet top-up request') && t.status === 'Pending'
+        ).length;
 
         const weeklySalesData = Array.from({ length: 7 }, (_, i) => {
             const date = subDays(new Date(), i);
@@ -100,8 +126,14 @@ export default function AdminDashboardPage() {
             }
         });
 
-        return { totalRevenue, totalOrders, weeklySalesData, totalUsers };
-    }, [orders, users, isClient]);
+        return { totalRevenue, totalOrders, weeklySalesData, totalUsers, pendingProductOrdersCount, pendingWalletRequestsCount };
+    }, [orders, users, transactions, isClient]);
+
+    const getNotificationCount = (label: string) => {
+        if (label === 'Orders') return pendingProductOrdersCount;
+        if (label === 'Wallet Top-ups') return pendingWalletRequestsCount;
+        return 0;
+    }
 
     if (!isClient) {
         return (
@@ -129,7 +161,13 @@ export default function AdminDashboardPage() {
       <div className="mb-8">
           <h1 className="text-2xl font-semibold mb-4">Admin Controls</h1>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-11 gap-4">
-              {navLinks.map(link => <QuickNavCard key={link.href} {...link} />)}
+              {navLinks.map(link => (
+                  <QuickNavCard 
+                    key={link.href} 
+                    {...link} 
+                    notificationCount={getNotificationCount(link.label)}
+                  />
+              ))}
           </div>
       </div>
 
