@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -10,24 +11,34 @@ import {
 } from '@/components/ui/card';
 import { TransactionList } from '@/components/transaction-list';
 import { useAppStore } from '@/lib/store';
+import { parse } from 'date-fns';
 
 export default function AdminTransactionsPage() {
   const { transactions } = useAppStore();
 
-  const walletTopUpRequests = React.useMemo(() => {
-    return transactions.filter(t => t.description.toLowerCase().includes('wallet top-up request'));
+  const sortedTransactions = React.useMemo(() => {
+    return [...transactions].sort((a, b) => {
+        try {
+            const dateA = parse(a.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+            const dateB = parse(b.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+            return dateB.getTime() - dateA.getTime();
+        } catch (e) {
+            console.error("Failed to parse date for sorting:", e);
+            return 0; 
+        }
+    });
   }, [transactions]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Manual Top-up Requests</CardTitle>
+        <CardTitle>Transaction History</CardTitle>
         <CardDescription>
-          A list of all manual wallet top-up requests from users that require approval.
+          A complete log of all wallet transactions, including top-ups and purchases.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <TransactionList transactions={walletTopUpRequests} isAdminView={true} />
+        <TransactionList transactions={sortedTransactions} isAdminView={false} />
       </CardContent>
     </Card>
   );
