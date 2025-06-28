@@ -78,73 +78,114 @@ export default function AdminPaymentMethodsPage() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Payment Methods</CardTitle>
             <CardDescription>Manage the payment methods for wallet top-ups.</CardDescription>
           </div>
-          <Button onClick={handleNew}>
+          <Button onClick={handleNew} className="w-full sm:w-auto">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Method
           </Button>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Method Name</TableHead>
-                <TableHead>Account Number</TableHead>
-                <TableHead>Account Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paymentMethods.length > 0 ? (
-                paymentMethods.map((method) => (
-                  <TableRow key={method.id}>
-                    <TableCell className="font-medium whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <Image src={method.logoUrl} alt={method.name} width={40} height={40} className="rounded-md object-contain" />
-                        <span>{method.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{method.accountNumber}</TableCell>
-                    <TableCell>{method.accountType}</TableCell>
-                    <TableCell>
-                      <Badge variant={method.enabled ? 'default' : 'secondary'} className={method.enabled ? 'bg-green-500' : ''}>
-                        {method.enabled ? 'Enabled' : 'Disabled'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Actions</span>
-                              </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(method)}>
-                                  Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(method)} className="text-destructive">
-                                  Delete
-                              </DropdownMenuItem>
-                          </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    No payment methods found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {paymentMethods.length > 0 ? (
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Method Name</TableHead>
+                      <TableHead>Account Number</TableHead>
+                      <TableHead>Account Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paymentMethods.map((method) => (
+                      <TableRow key={method.id}>
+                        <TableCell className="font-medium whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <Image src={method.logoUrl} alt={method.name} width={40} height={40} className="rounded-md object-contain" />
+                            <span>{method.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{method.accountNumber}</TableCell>
+                        <TableCell>{method.accountType}</TableCell>
+                        <TableCell>
+                          <Badge variant={method.enabled ? 'default' : 'secondary'} className={method.enabled ? 'bg-green-500' : ''}>
+                            {method.enabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">Actions</span>
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEdit(method)}>
+                                      Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDelete(method)} className="text-destructive">
+                                      Delete
+                                  </DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                  {paymentMethods.map((method) => (
+                      <Card key={method.id} className="p-4 shadow-sm">
+                          <div className="flex justify-between items-start gap-4">
+                              <div className="flex items-center gap-3">
+                                  <Image src={method.logoUrl} alt={method.name} width={40} height={40} className="rounded-md object-contain" />
+                                  <div>
+                                      <p className="font-semibold text-base">{method.name}</p>
+                                      <p className="text-sm text-muted-foreground">{method.accountType}</p>
+                                  </div>
+                              </div>
+                              <Badge variant={method.enabled ? 'default' : 'secondary'} className={method.enabled ? 'bg-green-500' : ''}>
+                                  {method.enabled ? 'Enabled' : 'Disabled'}
+                              </Badge>
+                          </div>
+                          <div className="flex justify-between items-center mt-3 pt-3 border-t">
+                              <p className="text-sm text-muted-foreground font-mono">{method.accountNumber}</p>
+                              <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                      <Button variant="outline" size="sm">
+                                          Actions <MoreHorizontal className="h-4 w-4 ml-1" />
+                                      </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleEdit(method)}>
+                                          Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleDelete(method)} className="text-destructive">
+                                          Delete
+                                      </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
+                          </div>
+                      </Card>
+                  ))}
+              </div>
+            </>
+          ) : (
+            <div className="h-24 text-center text-muted-foreground flex items-center justify-center border rounded-lg">
+              <p>No payment methods found.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
       
