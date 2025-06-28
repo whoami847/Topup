@@ -20,7 +20,7 @@ import { useAppStore } from '@/lib/store';
 import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import Image from 'next/image';
-import { Landmark } from 'lucide-react';
+import { Landmark, Copy } from 'lucide-react';
 
 const formSchema = z.object({
   amount: z.coerce.number().min(1, { message: "Amount must be greater than 0." }),
@@ -38,6 +38,22 @@ export function WalletTopUpForm() {
       transactionId: '',
     },
   });
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "Copied!",
+        description: "The account number has been copied to your clipboard.",
+      });
+    }).catch(err => {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the text. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Could not copy text: ', err);
+    });
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!currentUser) {
@@ -78,10 +94,18 @@ export function WalletTopUpForm() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {enabledPaymentMethods.map((method) => (
                 <Alert key={method.id} className="bg-secondary/50 border-secondary-foreground/10">
-                    <Image src={method.logoUrl} alt={method.name} width={24} height={24} className="absolute left-4 top-4 h-6 w-6" />
-                    <AlertTitle className="font-bold">{method.name} ({method.accountType})</AlertTitle>
-                    <AlertDescription className="font-mono text-base font-semibold text-primary/90 tracking-wider">
-                        {method.accountNumber}
+                    <div className="flex items-center gap-3">
+                        <Image src={method.logoUrl} alt={method.name} width={24} height={24} className="h-6 w-6" />
+                        <AlertTitle className="font-bold flex-grow">{method.name} ({method.accountType})</AlertTitle>
+                    </div>
+                    <AlertDescription className="mt-3 flex items-center justify-between rounded-md bg-background p-2 pl-3">
+                        <span className="font-mono text-base font-semibold text-primary/90 tracking-wider">
+                            {method.accountNumber}
+                        </span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyToClipboard(method.accountNumber)}>
+                            <span className="sr-only">Copy account number</span>
+                            <Copy className="h-4 w-4" />
+                        </Button>
                     </AlertDescription>
                 </Alert>
             ))}
