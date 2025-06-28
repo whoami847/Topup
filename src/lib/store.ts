@@ -86,6 +86,7 @@ type AppState = {
   updateTransactionStatus: (transactionId: string, status: Transaction['status']) => Promise<void>;
   purchaseWithBalance: (order: Omit<Order, 'id' | 'status' | 'userId'>) => Promise<{ success: boolean, message: string }>;
   updateOrderStatus: (orderId: string, status: 'COMPLETED' | 'FAILED') => Promise<void>;
+  clearOrderHistory: () => Promise<void>;
   addMainCategory: (category: Omit<MainCategory, 'id'>) => Promise<MainCategory & { id: string }>;
   updateMainCategory: (id: string, category: Partial<Omit<MainCategory, 'id'>>) => Promise<void>;
   deleteMainCategory: (id: string) => Promise<void>;
@@ -360,6 +361,38 @@ export const useAppStore = create<AppState>()(
         batch.update(orderRef, { status });
 
         await batch.commit();
+      },
+      
+      clearOrderHistory: async () => {
+          const batch = writeBatch(db);
+          const ordersRef = collection(db, 'orders');
+          const statusesToClear = ['COMPLETED', 'FAILED', 'CANCELLED'];
+          
+          const q = query(ordersRef, where('status', 'in', statusesToClear));
+          
+          try {
+              const querySnapshot = await getDocs(q);
+              if (querySnapshot.empty) {
+                  console.log("No orders to clear.");
+                  return;
+              }
+              
+              let clearedCount = 0;
+              querySnapshot.forEach(docSnap => {
+                  const order = docSnap.data() as Order;
+                  if (!order.description.toLowerCase().includes('wallet top-up')) {
+                      batch.delete(docSnap.ref);
+                      clearedCount++;
+                  }
+              });
+      
+              if (clearedCount > 0) {
+                  await batch.commit();
+              }
+          } catch (error) {
+              console.error("Error clearing order history: ", error);
+              throw new Error("Failed to clear order history.");
+          }
       },
 
       addMainCategory: async (category) => {
