@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export function HeroSection() {
   return (
-    <section className="relative w-full h-[50vh] md:h-[75vh] flex items-center justify-center text-center text-white">
+    <section className="relative w-full h-[40vh] md:h-[75vh] flex items-center justify-center text-center text-white">
       <Image
         src="https://placehold.co/1920x1080.png"
         alt="Free Fire Diamonds Banner"
