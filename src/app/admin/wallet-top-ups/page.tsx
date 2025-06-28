@@ -5,9 +5,6 @@ import * as React from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -17,12 +14,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import { Wallet } from 'lucide-react';
+import { Wallet, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TransactionList } from '@/components/transaction-list';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 const statusConfig = {
     COMPLETED: {
@@ -109,24 +119,104 @@ const ManualRequests = () => {
 }
 
 export default function AdminWalletTopUpsPage() {
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = React.useState(false);
+    const { orders, transactions, clearWalletHistory, undoClearWalletHistory } = useAppStore();
+    const { toast } = useToast();
+
+    const nonPendingWalletItems = React.useMemo(() => {
+        const o = orders.filter(order => order.description.toLowerCase().includes('wallet top-up') && order.status !== 'PENDING');
+        const t = transactions.filter(t => t.description.toLowerCase().includes('wallet top-up request') && t.status !== 'Pending');
+        return [...o, ...t];
+    }, [orders, transactions]);
+    
+    const handleUndoClear = async () => {
+        try {
+            await undoClearWalletHistory();
+            toast({
+                title: "Undo Successful",
+                description: "Wallet history has been restored."
+            });
+        } catch (error) {
+            toast({
+                title: "Undo Failed",
+                description: "An error occurred while restoring the history.",
+                variant: "destructive",
+            });
+        }
+    }
+
+    const handleClearHistory = async () => {
+        try {
+            await clearWalletHistory();
+            toast({
+                title: "History Cleared",
+                description: "All non-pending wallet history has been removed.",
+                duration: 6000,
+                action: (
+                    <ToastAction altText="Undo" onClick={handleUndoClear}>
+                        Undo
+                    </ToastAction>
+                )
+            });
+        } catch (error) {
+            toast({
+                title: "Clear Failed",
+                description: "An error occurred while clearing the wallet history.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsClearConfirmOpen(false);
+        }
+    };
+
+
   return (
-    <Tabs defaultValue="manual" className="w-full">
-        <div className="flex items-center justify-between mb-4">
-            <div>
-                <h1 className="text-2xl font-bold">Wallet Top-ups</h1>
-                <p className="text-muted-foreground">Manage automated and manual wallet top-ups.</p>
+    <>
+        <Tabs defaultValue="manual" className="w-full">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h1 className="text-2xl font-bold">Wallet Top-ups</h1>
+                    <p className="text-muted-foreground">Manage automated and manual wallet top-ups.</p>
+                </div>
+                 <div className="flex items-center gap-4">
+                    <TabsList className="grid grid-cols-2 w-auto">
+                        <TabsTrigger value="manual">Manual Requests</TabsTrigger>
+                        <TabsTrigger value="automated">Automated Orders</TabsTrigger>
+                    </TabsList>
+                    <Button 
+                        variant="outline" 
+                        onClick={() => setIsClearConfirmOpen(true)}
+                        disabled={nonPendingWalletItems.length === 0}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Clear History
+                    </Button>
+                </div>
             </div>
-            <TabsList className="grid grid-cols-2 w-auto">
-                <TabsTrigger value="manual">Manual Requests</TabsTrigger>
-                <TabsTrigger value="automated">Automated Orders</TabsTrigger>
-            </TabsList>
-        </div>
-        <TabsContent value="manual">
-            <ManualRequests />
-        </TabsContent>
-        <TabsContent value="automated">
-            <AutomatedTopUps />
-        </TabsContent>
-    </Tabs>
+            <TabsContent value="manual">
+                <ManualRequests />
+            </TabsContent>
+            <TabsContent value="automated">
+                <AutomatedTopUps />
+            </TabsContent>
+        </Tabs>
+
+        <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to clear the wallet history?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone easily. This will permanently delete all completed, failed, and cancelled wallet top-up records (both manual and automated). Pending requests will not be affected.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearHistory} className="bg-destructive hover:bg-destructive/90">
+                        Clear History
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    </>
   );
 }

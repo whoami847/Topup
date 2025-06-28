@@ -76,6 +76,8 @@ type AppState = {
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthDialogOpen: boolean;
+  lastClearedWalletOrders: Order[];
+  lastClearedWalletTransactions: Transaction[];
   init: () => void;
   setAuthDialogOpen: (open: boolean) => void;
   // Async actions
@@ -87,6 +89,8 @@ type AppState = {
   purchaseWithBalance: (order: Omit<Order, 'id' | 'status' | 'userId'>) => Promise<{ success: boolean, message: string }>;
   updateOrderStatus: (orderId: string, status: 'COMPLETED' | 'FAILED') => Promise<void>;
   clearOrderHistory: () => Promise<void>;
+  clearWalletHistory: () => Promise<void>;
+  undoClearWalletHistory: () => Promise<void>;
   addMainCategory: (category: Omit<MainCategory, 'id'>) => Promise<MainCategory & { id: string }>;
   updateMainCategory: (id: string, category: Partial<Omit<MainCategory, 'id'>>) => Promise<void>;
   deleteMainCategory: (id: string) => Promise<void>;
@@ -123,6 +127,8 @@ export const useAppStore = create<AppState>()(
       currentUser: null,
       isAuthLoading: true,
       isAuthDialogOpen: false,
+      lastClearedWalletOrders: [],
+      lastClearedWalletTransactions: [],
 
       init: () => {
           cleanupListeners(); // Clear any previous listeners
@@ -394,6 +400,61 @@ export const useAppStore = create<AppState>()(
               throw new Error("Failed to clear order history.");
           }
       },
+
+      clearWalletHistory: async () => {
+        const { orders, transactions } = get();
+        const batch = writeBatch(db);
+
+        const ordersToClear = orders.filter(o => 
+            o.description.toLowerCase().includes('wallet top-up') && o.status !== 'PENDING'
+        );
+        const transactionsToClear = transactions.filter(t => 
+            t.description.toLowerCase().includes('wallet top-up request') && t.status !== 'Pending'
+        );
+
+        if (ordersToClear.length === 0 && transactionsToClear.length === 0) {
+            console.log("No wallet history to clear.");
+            return;
+        }
+
+        set({ lastClearedWalletOrders: ordersToClear, lastClearedWalletTransactions: transactionsToClear });
+
+        ordersToClear.forEach(o => batch.delete(doc(db, 'orders', o.id)));
+        transactionsToClear.forEach(t => batch.delete(doc(db, 'transactions', t.id)));
+
+        try {
+            await batch.commit();
+        } catch (error) {
+            console.error("Error clearing wallet history: ", error);
+            set({ lastClearedWalletOrders: [], lastClearedWalletTransactions: [] }); // Clear temp state on failure
+            throw new Error("Failed to clear wallet history.");
+        }
+    },
+
+    undoClearWalletHistory: async () => {
+        const { lastClearedWalletOrders, lastClearedWalletTransactions } = get();
+        if (lastClearedWalletOrders.length === 0 && lastClearedWalletTransactions.length === 0) {
+            return;
+        }
+
+        const batch = writeBatch(db);
+        lastClearedWalletOrders.forEach(o => {
+            const { id, ...data } = o;
+            batch.set(doc(db, 'orders', id), data);
+        });
+        lastClearedWalletTransactions.forEach(t => {
+            const { id, ...data } = t;
+            batch.set(doc(db, 'transactions', id), data)
+        });
+
+        try {
+            await batch.commit();
+            set({ lastClearedWalletOrders: [], lastClearedWalletTransactions: [] }); // Clear temp state on success
+        } catch (error) {
+            console.error("Error undoing wallet history clearing: ", error);
+            throw new Error("Failed to undo wallet history clearing.");
+        }
+    },
 
       addMainCategory: async (category) => {
         const docRef = await addDoc(collection(db, 'mainCategories'), category);
