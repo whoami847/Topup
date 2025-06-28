@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -20,6 +19,14 @@ const PageSkeleton = () => (
 
 export default function OrdersPage() {
   const { orders, currentUser, isAuthLoading } = useAppStore();
+
+  const userProductOrders = React.useMemo(() => {
+    if (!currentUser) return [];
+    // Filter to show only the current user's orders and exclude wallet top-ups
+    return orders
+        .filter(order => order.userId === currentUser.uid)
+        .filter(order => !order.description.toLowerCase().includes('wallet top-up'));
+  }, [orders, currentUser]);
   
   if (isAuthLoading) {
     return <PageSkeleton />;
@@ -36,7 +43,7 @@ export default function OrdersPage() {
   return (
     <div className="container py-8 md:py-12">
       <h1 className="text-3xl md:text-4xl font-bold mb-8 font-headline">My Orders</h1>
-      <OrderList orders={orders} />
+      <OrderList orders={userProductOrders} />
     </div>
   );
 }
