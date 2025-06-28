@@ -29,6 +29,7 @@ import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { MoreHorizontal, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { parse } from 'date-fns';
 
 const statusConfig = {
     COMPLETED: {
@@ -58,7 +59,18 @@ export default function AdminOrdersPage() {
   const { toast } = useToast();
 
   const productOrders = React.useMemo(() => {
-    return orders.filter(order => !order.description.toLowerCase().includes('wallet top-up'));
+    return orders
+        .filter(order => !order.description.toLowerCase().includes('wallet top-up'))
+        .sort((a, b) => {
+            try {
+                const dateA = parse(a.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                const dateB = parse(b.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                return dateB.getTime() - dateA.getTime();
+            } catch (e) {
+                console.error("Failed to parse date for sorting:", e);
+                return 0;
+            }
+        });
   }, [orders]);
 
   const handleUpdateStatus = async (orderId: string, status: 'COMPLETED' | 'FAILED') => {

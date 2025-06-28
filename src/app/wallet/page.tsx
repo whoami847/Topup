@@ -15,6 +15,7 @@ import { Plus, List, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { LoginRequired } from '@/components/auth/login-required';
 import { Skeleton } from '@/components/ui/skeleton';
+import { parse } from "date-fns";
 
 const PageSkeleton = () => (
   <div className="container py-8 md:py-12">
@@ -39,7 +40,18 @@ export default function WalletPage() {
   const walletTransactions = React.useMemo(() => {
     if (!currentUser) return [];
     // Filter to only show transactions related to adding funds to the wallet.
-    return transactions.filter(t => t.description.toLowerCase().includes('wallet top-up'));
+    return transactions
+        .filter(t => t.description.toLowerCase().includes('wallet top-up'))
+        .sort((a, b) => {
+            try {
+                const dateA = parse(a.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                const dateB = parse(b.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                return dateB.getTime() - dateA.getTime();
+            } catch (e) {
+                console.error("Failed to parse date for sorting:", e);
+                return 0;
+            }
+        });
   }, [transactions, currentUser]);
 
 

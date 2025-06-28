@@ -5,6 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { OrderList } from "@/components/order-list";
 import { LoginRequired } from '@/components/auth/login-required';
 import { Skeleton } from '@/components/ui/skeleton';
+import { parse } from 'date-fns';
 
 const PageSkeleton = () => (
   <div className="container py-8 md:py-12">
@@ -25,7 +26,17 @@ export default function OrdersPage() {
     // Filter to show only the current user's orders and exclude wallet top-ups
     return orders
         .filter(order => order.userId === currentUser.uid)
-        .filter(order => !order.description.toLowerCase().includes('wallet top-up'));
+        .filter(order => !order.description.toLowerCase().includes('wallet top-up'))
+        .sort((a, b) => {
+            try {
+                const dateA = parse(a.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                const dateB = parse(b.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                return dateB.getTime() - dateA.getTime();
+            } catch (e) {
+                console.error("Failed to parse date for sorting:", e);
+                return 0; 
+            }
+        });
   }, [orders, currentUser]);
   
   if (isAuthLoading) {
