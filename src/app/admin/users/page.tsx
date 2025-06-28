@@ -31,7 +31,7 @@ const UserRowSkeleton = () => (
             </div>
         </TableCell>
         <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-        <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+        <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
         <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
     </TableRow>
 );
@@ -54,7 +54,6 @@ export default function AdminUsersPage() {
             const totalSpent = userOrders.reduce((sum, order) => sum + order.amount, 0);
             return {
                 ...user,
-                orderCount: userOrders.length,
                 totalSpent,
             };
     });
@@ -79,7 +78,7 @@ export default function AdminUsersPage() {
             <TableRow>
               <TableHead>User</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead className="text-center">Orders</TableHead>
+              <TableHead className="text-right">Wallet Balance</TableHead>
               <TableHead className="text-right">Total Spent</TableHead>
             </TableRow>
           </TableHeader>
@@ -104,7 +103,7 @@ export default function AdminUsersPage() {
                     </div>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell className="text-center">{user.orderCount}</TableCell>
+                  <TableCell className="text-right">৳{user.balance.toFixed(2)}</TableCell>
                   <TableCell className="text-right">৳{user.totalSpent.toFixed(2)}</TableCell>
                 </TableRow>
               ))
