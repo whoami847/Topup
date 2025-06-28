@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            access_token: gateway.accessToken,
+            access_token: gateway.storePassword,
             transaction_id: transactionId,
         }),
     });

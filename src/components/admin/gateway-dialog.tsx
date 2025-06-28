@@ -31,7 +31,7 @@ import { PasswordInput } from '../ui/password-input';
 
 const gatewaySchema = z.object({
   name: z.string().min(1, 'Gateway Name is required.'),
-  accessToken: z.string().min(1, 'Access Token is required.'),
+  storePassword: z.string().min(1, 'Store Password is required.'),
   isLive: z.boolean(),
   enabled: z.boolean(),
 });
@@ -53,7 +53,7 @@ export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: Gate
     resolver: zodResolver(gatewaySchema),
     defaultValues: {
       name: 'RupantorPay',
-      accessToken: '',
+      storePassword: '',
       isLive: false,
       enabled: true,
     },
@@ -64,14 +64,14 @@ export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: Gate
       if (gateway) {
         form.reset({
           name: gateway.name,
-          accessToken: gateway.accessToken,
+          storePassword: gateway.storePassword || '',
           isLive: gateway.isLive,
           enabled: gateway.enabled,
         });
       } else {
         form.reset({
           name: 'RupantorPay',
-          accessToken: '',
+          storePassword: '',
           isLive: false,
           enabled: true,
         });
@@ -120,12 +120,12 @@ export function GatewayDialog({ isOpen, onOpenChange, gateway, onSuccess }: Gate
             />
             <FormField
               control={form.control}
-              name="accessToken"
+              name="storePassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Access Token / Secret</FormLabel>
+                  <FormLabel>Store Password / Secret</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="Enter Access Token" {...field} />
+                    <PasswordInput placeholder="Enter Store Password / Secret" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

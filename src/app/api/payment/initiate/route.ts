@@ -11,7 +11,7 @@ const RUPANTORPAY_API_URL = 'https://payment.rupantorpay.com/api/payment/checkou
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { amount, userId, customer_name, customer_email, customer_phone } = body;
+        const { amount, userId } = body;
 
         // Validate if userId is present
         if (!userId) {
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
         if (!userDoc.exists()) {
             return NextResponse.json({ message: 'User not found.' }, { status: 404 });
         }
+        const userData = userDoc.data();
         
         // Fetch active gateway from Firestore
         const gatewaysRef = collection(db, 'gateways');
@@ -36,8 +37,8 @@ export async function POST(req: NextRequest) {
         }
         
         const gateway = gatewaySnapshot.docs[0].data() as Gateway;
-        if (!gateway.accessToken) {
-            return NextResponse.json({ message: 'The active payment gateway is missing its Access Token.' }, { status: 500 });
+        if (!gateway.storePassword) {
+            return NextResponse.json({ message: 'The active payment gateway is missing its Store Password / Secret.' }, { status: 500 });
         }
 
         // Generate a unique transaction ID
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
             status: 'PENDING',
             userId: userId,
             gatewayId: gateway.id,
-            paymentDetails: { customer_name, customer_email, customer_phone }
+            paymentDetails: { customer_name: userData.email.split('@')[0], customer_email: userData.email }
         };
         await setDoc(doc(db, "orders", transaction_id), newOrder);
 
@@ -70,15 +71,15 @@ export async function POST(req: NextRequest) {
             success_url: `${baseUrl}/api/payment/callback?transaction_id=${transaction_id}&status=success`,
             fail_url: `${baseUrl}/api/payment/callback?transaction_id=${transaction_id}&status=fail`,
             cancel_url: `${baseUrl}/api/payment/callback?transaction_id=${transaction_id}&status=cancel`,
-            customer_name: customer_name,
-            customer_email: customer_email,
-            customer_phone: customer_phone,
+            customer_name: userData.email.split('@')[0],
+            customer_email: userData.email,
+            customer_phone: '01000000000', // Placeholder phone
         };
 
         // Prepare headers for RupantorPay API
         const headers = {
             'Content-Type': 'application/json',
-            'X-API-KEY': gateway.accessToken,
+            'X-API-KEY': gateway.storePassword,
             'X-CLIENT': host,
         };
 
