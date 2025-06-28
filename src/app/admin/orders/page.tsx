@@ -17,10 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import { Package } from 'lucide-react';
+import { MoreHorizontal, Package } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const statusConfig = {
     COMPLETED: {
@@ -46,11 +54,28 @@ const statusConfig = {
 };
 
 export default function AdminOrdersPage() {
-  const { orders } = useAppStore();
+  const { orders, updateOrderStatus } = useAppStore();
+  const { toast } = useToast();
 
   const productOrders = React.useMemo(() => {
     return orders.filter(order => !order.description.toLowerCase().includes('wallet top-up'));
   }, [orders]);
+
+  const handleUpdateStatus = async (orderId: string, status: 'COMPLETED' | 'FAILED') => {
+    try {
+        await updateOrderStatus(orderId, status);
+        toast({
+            title: "Order Updated",
+            description: `The order has been marked as ${status.toLowerCase()}.`
+        });
+    } catch (error) {
+        toast({
+            title: "Update Failed",
+            description: "An error occurred while updating the order.",
+            variant: "destructive",
+        });
+    }
+  };
 
   return (
     <Card>
@@ -68,6 +93,7 @@ export default function AdminOrdersPage() {
                     <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -85,6 +111,24 @@ export default function AdminOrdersPage() {
                             </Badge>
                             </TableCell>
                             <TableCell className="text-right">৳{order.amount.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" disabled={order.status !== 'PENDING'}>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Actions</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, 'COMPLETED')}>
+                                            Mark as Completed
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, 'FAILED')} className="text-destructive">
+                                            Mark as Failed
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
                         </TableRow>
                         );
                     })}

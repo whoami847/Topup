@@ -30,6 +30,7 @@ import { initialMainCategories, initialTopUpCategories } from './product-data';
 import type { MainCategory, TopUpCategory, Product } from './products';
 import type { PaymentMethod } from './payments';
 import type { Gateway } from './gateways';
+import { format } from 'date-fns';
 
 export type Order = {
   id: string;
@@ -84,7 +85,8 @@ type AppState = {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
   updateTransactionStatus: (transactionId: string, status: Transaction['status']) => Promise<void>;
   purchaseWithBalance: (order: Omit<Order, 'id' | 'status' | 'userId'>) => Promise<{ success: boolean, message: string }>;
-  addMainCategory: (category: Omit<MainCategory, 'id'>) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: 'COMPLETED' | 'FAILED') => Promise<void>;
+  addMainCategory: (category: Omit<MainCategory, 'id'>) => Promise<MainCategory & { id: string }>;
   updateMainCategory: (id: string, category: Partial<Omit<MainCategory, 'id'>>) => Promise<void>;
   deleteMainCategory: (id: string) => Promise<void>;
   addTopUpCategory: (category: Omit<TopUpCategory, 'id'>, mainCategoryId: string) => Promise<void>;
@@ -175,7 +177,7 @@ export const useAppStore = create<AppState>()(
               set({ topUpCategories: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TopUpCategory)) });
           });
           const unsubUsers = onSnapshot(collection(db, 'users'), snapshot => {
-              set({ users: snapshot.docs.map(doc => doc.data() as User) });
+              set({ users: snapshot.docs.map(doc => ({ ...doc.data() } as User)) });
           });
            const unsubPaymentMethods = onSnapshot(collection(db, 'paymentMethods'), snapshot => {
               set({ paymentMethods: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod)) });
@@ -185,11 +187,9 @@ export const useAppStore = create<AppState>()(
           });
           
           const unsubAuth = onAuthStateChanged(auth, user => {
-              const staticUnsubs = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
-              // Detach previous user-specific listeners
-              unsubscribers = unsubscribers.filter(unsub => !staticUnsubs.includes(unsub));
-              cleanupListeners();
-              unsubscribers = staticUnsubs;
+              const allSubs = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
+              // Detach all non-auth listeners
+              unsubscribers.filter(unsub => !allSubs.includes(unsub)).forEach(unsub => unsub());
 
               if (user) {
                   const userDocSub = onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
@@ -204,19 +204,22 @@ export const useAppStore = create<AppState>()(
                        }
                   });
                   
-                  const ordersQuery = query(collection(db, 'orders'), where('userId', '==', user.uid));
+                  // Get all orders and transactions for admin, or user-specific for regular users.
+                  // This is a simplified approach for now. A real-world app might check for an admin role.
+                  const ordersQuery = query(collection(db, 'orders'));
                   const ordersSub = onSnapshot(ordersQuery, snapshot => {
                       set({ orders: snapshot.docs.map(d => ({id: d.id, ...d.data()}) as Order) });
                   });
                   
-                  const transactionsQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid));
+                  const transactionsQuery = query(collection(db, 'transactions'));
                   const transactionsSub = onSnapshot(transactionsQuery, snapshot => {
                       set({ transactions: snapshot.docs.map(d => ({id: d.id, ...d.data()}) as Transaction) });
                   });
 
-                  unsubscribers.push(userDocSub, ordersSub, transactionsSub);
+                  unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, userDocSub, ordersSub, transactionsSub, unsubAuth];
               } else {
                   set({ currentUser: null, orders: [], transactions: [], balance: 0 });
+                   unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
               }
               set({ isAuthLoading: false });
           });
@@ -288,12 +291,12 @@ export const useAppStore = create<AppState>()(
 
         const batch = writeBatch(db);
 
-        // 1. Create the order
+        // 1. Create the order with PENDING status
         const orderRef = doc(collection(db, 'orders'));
         batch.set(orderRef, { 
             ...orderData, 
             userId: currentUser.uid, 
-            status: 'COMPLETED',
+            status: 'PENDING',
         });
 
         // 2. Create a transaction record for the purchase
@@ -312,17 +315,56 @@ export const useAppStore = create<AppState>()(
 
         try {
             await batch.commit();
-            // TODO: Here you would trigger the actual top-up for the player
-            // e.g., callTopUpAPI(orderData.productDetails.player_id, orderData.description);
-            return { success: true, message: "Purchase successful!" };
+            return { success: true, message: "Order placed successfully! It is now pending admin approval." };
         } catch (error) {
             console.error("Purchase failed:", error);
             return { success: false, message: "An error occurred during the purchase." };
         }
       },
 
+      updateOrderStatus: async (orderId, status) => {
+        const orderRef = doc(db, 'orders', orderId);
+        const orderDoc = await getDoc(orderRef);
+        
+        if (!orderDoc.exists()) {
+            console.error("Order not found");
+            throw new Error("Order not found");
+        }
+
+        const order = { id: orderDoc.id, ...orderDoc.data() } as Order;
+        
+        if (order.status !== 'PENDING') {
+            console.warn(`Order ${orderId} is not pending, cannot update status.`);
+            return;
+        }
+
+        const batch = writeBatch(db);
+        
+        if (status === 'FAILED') {
+            // Refund the user's balance
+            const userRef = doc(db, 'users', order.userId);
+            batch.update(userRef, { balance: increment(order.amount) });
+
+            // Create a refund transaction
+            const transactionRef = doc(collection(db, 'transactions'));
+            const refundTransaction = {
+                date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
+                description: `Refund for failed order: ${order.description}`,
+                amount: order.amount, // Positive amount for refund
+                status: 'Completed',
+                userId: order.userId,
+            };
+            batch.set(transactionRef, refundTransaction);
+        }
+        
+        batch.update(orderRef, { status });
+
+        await batch.commit();
+      },
+
       addMainCategory: async (category) => {
-        await addDoc(collection(db, 'mainCategories'), category);
+        const docRef = await addDoc(collection(db, 'mainCategories'), category);
+        return { ...category, id: docRef.id };
       },
 
       updateMainCategory: async (id, updatedData) => {
