@@ -134,10 +134,12 @@ export const useAppStore = create<AppState>()(
                     console.log('Database empty, seeding initial product data...');
                     const batch = writeBatch(db);
                     initialMainCategories.forEach(cat => {
-                        batch.set(doc(db, 'mainCategories', cat.id), cat);
+                        const { id, ...data } = cat;
+                        batch.set(doc(db, 'mainCategories', id), data);
                     });
                     initialTopUpCategories.forEach(cat => {
-                        batch.set(doc(db, 'topUpCategories', cat.id), cat);
+                        const { id, ...data } = cat;
+                        batch.set(doc(db, 'topUpCategories', id), data);
                     });
                     await batch.commit();
                     console.log('Product data seeding complete.');
@@ -149,8 +151,7 @@ export const useAppStore = create<AppState>()(
                 if (gatewaySnapshot.empty) {
                     console.log('No gateways found, seeding default RupantorPay gateway...');
                     const gatewayId = `rupantorpay-${Date.now()}`;
-                    const newGateway: Gateway = {
-                        id: gatewayId,
+                    const newGateway: Omit<Gateway, 'id'> = {
                         name: 'RupantorPay',
                         storePassword: '3FIUryatXurKtWRITL7vflucojAVWXjo7I6c7hKW6sky5wvKfK',
                         isLive: false, // Default to sandbox mode for safety
@@ -168,19 +169,19 @@ export const useAppStore = create<AppState>()(
 
           // Public Listeners
           const unsubMain = onSnapshot(collection(db, 'mainCategories'), snapshot => {
-              set({ mainCategories: snapshot.docs.map(doc => ({ ...doc.data() } as MainCategory)) });
+              set({ mainCategories: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MainCategory)) });
           });
           const unsubTopUp = onSnapshot(collection(db, 'topUpCategories'), snapshot => {
-              set({ topUpCategories: snapshot.docs.map(doc => ({ ...doc.data() } as TopUpCategory)) });
+              set({ topUpCategories: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TopUpCategory)) });
           });
           const unsubUsers = onSnapshot(collection(db, 'users'), snapshot => {
               set({ users: snapshot.docs.map(doc => doc.data() as User) });
           });
            const unsubPaymentMethods = onSnapshot(collection(db, 'paymentMethods'), snapshot => {
-              set({ paymentMethods: snapshot.docs.map(doc => ({ ...doc.data() } as PaymentMethod)) });
+              set({ paymentMethods: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod)) });
           });
            const unsubGateways = onSnapshot(collection(db, 'gateways'), snapshot => {
-              set({ gateways: snapshot.docs.map(doc => ({ ...doc.data() } as Gateway)) });
+              set({ gateways: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Gateway)) });
           });
           
           const unsubAuth = onAuthStateChanged(auth, user => {
@@ -254,15 +255,18 @@ export const useAppStore = create<AppState>()(
       addTransaction: async (transaction) => {
         const currentUser = get().currentUser;
         if (!currentUser) throw new Error("User not logged in.");
-        const transactionRef = doc(collection(db, 'transactions'));
-        await setDoc(transactionRef, { ...transaction, userId: currentUser.uid, id: transactionRef.id });
+        await addDoc(collection(db, 'transactions'), { ...transaction, userId: currentUser.uid });
       },
 
       updateTransactionStatus: async (transactionId, status) => {
           const transactionRef = doc(db, 'transactions', transactionId);
-          const transactionDoc = (await getDoc(transactionRef)).data() as Transaction | undefined;
+          const transactionDocSnap = await getDoc(transactionRef);
           
-          if (transactionDoc && transactionDoc.status === 'Pending' && status === 'Completed' && transactionDoc.amount > 0) {
+          if (!transactionDocSnap.exists()) return;
+
+          const transactionDoc = transactionDocSnap.data() as Transaction;
+          
+          if (transactionDoc.status === 'Pending' && status === 'Completed' && transactionDoc.amount > 0) {
               const userRef = doc(db, 'users', transactionDoc.userId);
               const batch = writeBatch(db);
               batch.update(transactionRef, { status });
@@ -290,13 +294,11 @@ export const useAppStore = create<AppState>()(
             ...orderData, 
             userId: currentUser.uid, 
             status: 'COMPLETED',
-            id: orderRef.id,
         });
 
         // 2. Create a transaction record for the purchase
         const transactionRef = doc(collection(db, 'transactions'));
         batch.set(transactionRef, {
-            id: transactionRef.id,
             date: orderData.date,
             description: orderData.description,
             amount: -orderData.amount, // Negative amount for purchase
@@ -320,12 +322,12 @@ export const useAppStore = create<AppState>()(
       },
 
       addMainCategory: async (category) => {
-        const newDocRef = doc(collection(db, 'mainCategories'));
-        await setDoc(newDocRef, { ...category, id: newDocRef.id });
+        await addDoc(collection(db, 'mainCategories'), category);
       },
 
       updateMainCategory: async (id, updatedData) => {
-        await updateDoc(doc(db, 'mainCategories', id), updatedData);
+        const { id: _, ...dataToUpdate } = updatedData;
+        await updateDoc(doc(db, 'mainCategories', id), dataToUpdate);
       },
 
       deleteMainCategory: async (id) => {
@@ -333,18 +335,16 @@ export const useAppStore = create<AppState>()(
       },
 
       addTopUpCategory: async (categoryData, mainCategoryId) => {
-        const newDocRef = doc(collection(db, 'topUpCategories'));
-        const newCategory = { ...categoryData, id: newDocRef.id };
+        const { slug } = categoryData;
+        const newDocRef = await addDoc(collection(db, 'topUpCategories'), categoryData);
         
-        const batch = writeBatch(db);
-        batch.set(newDocRef, newCategory);
-
         const mainCatRef = doc(db, 'mainCategories', mainCategoryId);
         const mainCat = get().mainCategories.find(mc => mc.id === mainCategoryId);
         if (mainCat) {
-           batch.update(mainCatRef, { subCategorySlugs: [...mainCat.subCategorySlugs, newCategory.slug] });
+            const batch = writeBatch(db);
+            batch.update(mainCatRef, { subCategorySlugs: [...mainCat.subCategorySlugs, slug] });
+            await batch.commit();
         }
-        await batch.commit();
       },
       
       updateTopUpCategory: async (id, updatedData, newMainCategoryId) => {
@@ -398,8 +398,7 @@ export const useAppStore = create<AppState>()(
       },
 
       addPaymentMethod: async (method) => {
-        const newDocRef = doc(collection(db, 'paymentMethods'));
-        await setDoc(newDocRef, { ...method, id: newDocRef.id });
+        await addDoc(collection(db, 'paymentMethods'), method);
       },
 
       updatePaymentMethod: async (id, updatedData) => {
@@ -411,8 +410,7 @@ export const useAppStore = create<AppState>()(
       },
 
       addGateway: async (gateway) => {
-        const newDocRef = doc(collection(db, 'gateways'));
-        await setDoc(newDocRef, { ...gateway, id: newDocRef.id });
+        await addDoc(collection(db, 'gateways'), gateway);
       },
       
       updateGateway: async (id, updatedData) => {
@@ -425,3 +423,6 @@ export const useAppStore = create<AppState>()(
       
     })
 );
+
+
+    
