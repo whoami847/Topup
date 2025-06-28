@@ -126,7 +126,7 @@ export default function AdminOrdersPage() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
               <CardTitle>Product Orders</CardTitle>
               <CardDescription>A list of all the product orders from your store.</CardDescription>
@@ -135,6 +135,7 @@ export default function AdminOrdersPage() {
               variant="outline" 
               onClick={() => setIsClearConfirmOpen(true)}
               disabled={nonPendingOrders.length === 0}
+              className="w-full sm:w-auto"
           >
               <Trash2 className="mr-2 h-4 w-4" />
               Clear History
@@ -142,38 +143,84 @@ export default function AdminOrdersPage() {
         </CardHeader>
         <CardContent>
           {productOrders.length > 0 ? (
-              <Table>
-                  <TableHeader>
-                      <TableRow>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                      {productOrders.map((order) => {
-                          const configKey = order.status.toUpperCase() as keyof typeof statusConfig;
-                          const config = statusConfig[configKey] ?? statusConfig.PENDING;
-                          return (
-                          <TableRow key={order.id}>
-                              <TableCell className="font-medium truncate max-w-xs">{order.id}</TableCell>
-                              <TableCell>{order.date}</TableCell>
-                              <TableCell>{order.description}</TableCell>
-                              <TableCell>
-                              <Badge variant={config.variant} className={cn(config.className)}>
-                                  {config.text}
-                              </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">৳{order.amount.toFixed(2)}</TableCell>
-                              <TableCell className="text-right">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Order ID</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {productOrders.map((order) => {
+                            const configKey = order.status.toUpperCase() as keyof typeof statusConfig;
+                            const config = statusConfig[configKey] ?? statusConfig.PENDING;
+                            return (
+                            <TableRow key={order.id}>
+                                <TableCell className="font-medium truncate max-w-xs">{order.id}</TableCell>
+                                <TableCell>{order.date}</TableCell>
+                                <TableCell>{order.description}</TableCell>
+                                <TableCell>
+                                <Badge variant={config.variant} className={cn(config.className)}>
+                                    {config.text}
+                                </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">৳{order.amount.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" disabled={order.status !== 'PENDING'}>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                                <span className="sr-only">Actions</span>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, 'COMPLETED')}>
+                                                Mark as Completed
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, 'FAILED')} className="text-destructive">
+                                                Mark as Failed
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+              </div>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                  {productOrders.map((order) => {
+                      const configKey = order.status.toUpperCase() as keyof typeof statusConfig;
+                      const config = statusConfig[configKey] ?? statusConfig.PENDING;
+                      return (
+                          <Card key={order.id} className="p-4 shadow-sm">
+                              <div className="flex justify-between items-start gap-4">
+                                  <div className="flex-grow space-y-1">
+                                      <p className="font-semibold text-base break-words">{order.description}</p>
+                                      <p className="text-sm text-muted-foreground">{order.date}</p>
+                                  </div>
+                                  <div className="text-right flex-shrink-0">
+                                      <p className="font-bold text-lg mb-1 whitespace-nowrap">৳{order.amount.toFixed(2)}</p>
+                                      <Badge variant={config.variant} className={cn(config.className)}>
+                                          {config.text}
+                                      </Badge>
+                                  </div>
+                              </div>
+                              <div className="flex justify-between items-center mt-2 pt-2 border-t">
+                                  <p className="text-xs text-muted-foreground break-all">ID: {order.id}</p>
                                   <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="icon" disabled={order.status !== 'PENDING'}>
-                                              <MoreHorizontal className="h-4 w-4" />
-                                              <span className="sr-only">Actions</span>
+                                          <Button variant="outline" size="sm" disabled={order.status !== 'PENDING'}>
+                                              Actions <MoreHorizontal className="h-4 w-4 ml-1" />
                                           </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
@@ -185,12 +232,12 @@ export default function AdminOrdersPage() {
                                           </DropdownMenuItem>
                                       </DropdownMenuContent>
                                   </DropdownMenu>
-                              </TableCell>
-                          </TableRow>
-                          );
-                      })}
-                  </TableBody>
-              </Table>
+                              </div>
+                          </Card>
+                      );
+                  })}
+              </div>
+            </>
           ) : (
               <div className="flex flex-col items-center justify-center gap-4 text-center h-64">
                   <Package className="h-16 w-16 text-muted-foreground" />
