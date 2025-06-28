@@ -57,6 +57,7 @@ export type User = {
     uid: string;
     email: string | null;
     balance: number;
+    isBanned?: boolean;
 };
 
 type Credentials = {
@@ -106,6 +107,8 @@ type AppState = {
   addGateway: (gateway: Omit<Gateway, 'id'>) => Promise<void>;
   updateGateway: (id: string, gateway: Partial<Omit<Gateway, 'id'>>) => Promise<void>;
   deleteGateway: (id: string) => Promise<void>;
+  manageUserWallet: (userId: string, amount: number, type: 'add' | 'subtract', reason: string) => Promise<void>;
+  toggleUserBanStatus: (userId: string, isBanned: boolean) => Promise<void>;
 };
 
 let unsubscribers: (() => void)[] = [];
@@ -202,7 +205,7 @@ export const useAppStore = create<AppState>()(
                   const userDocSub = onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
                        if (!userDoc.exists()) {
                           console.log(`Creating user profile for ${user.uid}`);
-                          const newUser: User = { uid: user.uid, email: user.email, balance: 0 };
+                          const newUser: User = { uid: user.uid, email: user.email, balance: 0, isBanned: false };
                           await setDoc(doc(db, "users", user.uid), newUser);
                           set({ currentUser: newUser, balance: 0 });
                        } else {
@@ -240,7 +243,7 @@ export const useAppStore = create<AppState>()(
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            const newUser: User = { uid: user.uid, email: user.email, balance: 0 };
+            const newUser: User = { uid: user.uid, email: user.email, balance: 0, isBanned: false };
             await setDoc(doc(db, "users", user.uid), newUser);
             return { success: true, message: "Registration successful!" };
         } catch (error: any) {
@@ -251,7 +254,13 @@ export const useAppStore = create<AppState>()(
       loginUser: async ({ email, password }) => {
           if (!password) return { success: false, message: "Password is required." };
           try {
-              await signInWithEmailAndPassword(auth, email, password);
+              const userCredential = await signInWithEmailAndPassword(auth, email, password);
+              const userDocRef = doc(db, 'users', userCredential.user.uid);
+              const userDoc = await getDoc(userDocRef);
+              if (userDoc.exists() && userDoc.data().isBanned) {
+                  await signOut(auth); // Log them out immediately
+                  return { success: false, message: "This account has been banned." };
+              }
               return { success: true, message: "Login successful!" };
           } catch (error: any) {
               return { success: false, message: "Invalid email or password." };
@@ -556,9 +565,35 @@ export const useAppStore = create<AppState>()(
       deleteGateway: async (id) => {
         await deleteDoc(doc(db, 'gateways', id));
       },
+
+      manageUserWallet: async (userId, amount, type, reason) => {
+        const userRef = doc(db, 'users', userId);
+        const batch = writeBatch(db);
+
+        const newBalance = type === 'add' ? increment(amount) : increment(-amount);
+        batch.update(userRef, { balance: newBalance });
+
+        const transactionRef = doc(collection(db, 'transactions'));
+        const newTransaction: Omit<Transaction, 'id'> = {
+            date: format(new Date(), 'dd/MM/yyyy, HH:mm:ss'),
+            description: `Admin adjustment: ${reason}`,
+            amount: type === 'add' ? amount : -amount,
+            status: 'Completed',
+            userId: userId,
+        };
+        batch.set(transactionRef, newTransaction);
+        
+        await batch.commit();
+      },
+
+      toggleUserBanStatus: async (userId, isBanned) => {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, { isBanned });
+      },
       
     })
 );
 
 
     
+
