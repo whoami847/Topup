@@ -103,9 +103,9 @@ export default function AdminPaymentMethodsPage() {
               {paymentMethods.length > 0 ? (
                 paymentMethods.map((method) => (
                   <TableRow key={method.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <Image src={method.logoUrl} alt={method.name} width={40} height={40} className="rounded-md" />
+                        <Image src={method.logoUrl} alt={method.name} width={40} height={40} className="rounded-md object-contain" />
                         <span>{method.name}</span>
                       </div>
                     </TableCell>
