@@ -1,13 +1,6 @@
+
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useAppStore, type Transaction } from "@/lib/store";
@@ -44,7 +37,7 @@ export function TransactionList({ transactions, isAdminView = false }: { transac
 
   if (transactions.length === 0) {
     return (
-        <div className="text-center text-muted-foreground py-16">
+        <div className="text-center text-muted-foreground py-16 border rounded-lg mt-4">
             <Receipt className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <p className="text-lg font-semibold">No Transactions Found</p>
             <p className="text-sm">Relevant transactions will appear here.</p>
@@ -53,37 +46,29 @@ export function TransactionList({ transactions, isAdminView = false }: { transac
   }
 
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="text-center">Status</TableHead>
-            {isAdminView && <TableHead className="text-right">Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.map((transaction) => {
-            const config = statusConfig[transaction.status] ?? statusConfig.Pending;
-            return (
-              <TableRow key={transaction.id}>
-                <TableCell className="font-medium whitespace-nowrap">{transaction.date}</TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell className={cn(
-                    "text-right font-semibold",
-                    transaction.amount >= 0 ? "text-green-500" : "text-destructive"
-                )}>
-                  {transaction.amount >= 0 ? '+' : ''}৳{transaction.amount.toFixed(2)}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge variant={config.variant} className={cn(config.className)}>
-                    {config.text}
-                  </Badge>
-                </TableCell>
-                {isAdminView && (
-                    <TableCell className="text-right">
+    <div className="space-y-4 mt-4">
+      {transactions.map((transaction) => {
+        const config = statusConfig[transaction.status] ?? statusConfig.Pending;
+        return (
+          <Card key={transaction.id} className="p-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex-grow space-y-1">
+                    <p className="font-semibold text-base break-words">{transaction.description}</p>
+                    <p className="text-sm text-muted-foreground">{transaction.date}</p>
+                </div>
+                <div className="flex items-center justify-between sm:justify-end gap-4 flex-shrink-0">
+                    <div className="text-right">
+                        <p className={cn(
+                            "font-bold text-lg",
+                            transaction.amount >= 0 ? "text-green-500" : "text-destructive"
+                        )}>
+                          {transaction.amount >= 0 ? '+' : ''}৳{transaction.amount.toFixed(2)}
+                        </p>
+                        <Badge variant={config.variant} className={cn('mt-1', config.className)}>
+                            {config.text}
+                        </Badge>
+                    </div>
+                    {isAdminView && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" disabled={transaction.status !== 'Pending'}>
@@ -95,18 +80,17 @@ export function TransactionList({ transactions, isAdminView = false }: { transac
                                 <DropdownMenuItem onClick={() => updateTransactionStatus(transaction.id, 'Completed')}>
                                     Mark as Completed
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateTransactionStatus(transaction.id, 'Failed')}>
+                                <DropdownMenuItem onClick={() => updateTransactionStatus(transaction.id, 'Failed')} className="text-destructive">
                                     Mark as Failed
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                    </TableCell>
-                )}
-              </TableRow>
-            );
-            })}
-        </TableBody>
-      </Table>
-    </Card>
+                    )}
+                </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
   );
 }

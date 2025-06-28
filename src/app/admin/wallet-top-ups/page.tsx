@@ -7,14 +7,6 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -33,6 +25,7 @@ import { TransactionList } from '@/components/transaction-list';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { parse } from 'date-fns';
 
 const statusConfig = {
     COMPLETED: {
@@ -60,43 +53,47 @@ const statusConfig = {
 const AutomatedTopUps = () => {
     const { orders } = useAppStore();
     const walletOrders = React.useMemo(() => {
-        return orders.filter(order => order.description.toLowerCase().includes('wallet top-up'));
+        return orders
+            .filter(order => order.description.toLowerCase().includes('wallet top-up'))
+            .sort((a, b) => {
+                try {
+                    const dateA = parse(a.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                    const dateB = parse(b.date, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                    return dateB.getTime() - dateA.getTime();
+                } catch (e) {
+                    console.error("Failed to parse date for sorting:", e);
+                    return 0;
+                }
+            });
     }, [orders]);
 
     return (
         <Card className="border-0 shadow-none">
-            <CardContent className="p-0">
+            <CardContent className="p-0 pt-4">
                 {walletOrders.length > 0 ? (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead>Order ID</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {walletOrders.map((order) => {
-                                const configKey = order.status.toUpperCase() as keyof typeof statusConfig;
-                                const config = statusConfig[configKey] ?? statusConfig.PENDING;
-                                return (
-                                <TableRow key={order.id}>
-                                    <TableCell className="font-medium truncate max-w-xs">{order.id}</TableCell>
-                                    <TableCell>{order.date}</TableCell>
-                                    <TableCell>{order.description}</TableCell>
-                                    <TableCell>
-                                    <Badge variant={config.variant} className={cn(config.className)}>
-                                        {config.text}
-                                    </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">৳{order.amount.toFixed(2)}</TableCell>
-                                </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
+                    <div className="space-y-4">
+                        {walletOrders.map((order) => {
+                            const configKey = order.status.toUpperCase() as keyof typeof statusConfig;
+                            const config = statusConfig[configKey] ?? statusConfig.PENDING;
+                            return (
+                                <Card key={order.id} className="p-4 shadow-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                        <div className="flex-grow space-y-1">
+                                            <p className="font-semibold text-base break-words">{order.description}</p>
+                                            <p className="text-sm text-muted-foreground">{order.date}</p>
+                                            <p className="text-xs text-muted-foreground break-all">ID: {order.id}</p>
+                                        </div>
+                                        <div className="text-right flex-shrink-0">
+                                            <p className="font-bold text-lg mb-1 whitespace-nowrap">৳{order.amount.toFixed(2)}</p>
+                                            <Badge variant={config.variant} className={cn(config.className)}>
+                                                {config.text}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </Card>
+                            );
+                        })}
+                    </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center gap-4 text-center h-64 border rounded-md">
                         <Wallet className="h-16 w-16 text-muted-foreground" />
@@ -173,13 +170,13 @@ export default function AdminWalletTopUpsPage() {
   return (
     <>
         <Tabs defaultValue="manual" className="w-full">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                 <div>
                     <h1 className="text-2xl font-bold">Wallet Top-ups</h1>
                     <p className="text-muted-foreground">Manage automated and manual wallet top-ups.</p>
                 </div>
-                 <div className="flex items-center gap-4">
-                    <TabsList className="grid grid-cols-2 w-auto">
+                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+                    <TabsList className="grid grid-cols-2 w-full sm:w-auto">
                         <TabsTrigger value="manual">Manual Requests</TabsTrigger>
                         <TabsTrigger value="automated">Automated Orders</TabsTrigger>
                     </TabsList>
@@ -187,6 +184,7 @@ export default function AdminWalletTopUpsPage() {
                         variant="outline" 
                         onClick={() => setIsClearConfirmOpen(true)}
                         disabled={nonPendingWalletItems.length === 0}
+                        className="w-full sm:w-auto"
                     >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Clear History
