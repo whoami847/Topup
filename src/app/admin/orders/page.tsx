@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import {
   Card,
   CardContent,
@@ -47,14 +48,18 @@ const statusConfig = {
 export default function AdminOrdersPage() {
   const { orders } = useAppStore();
 
+  const productOrders = React.useMemo(() => {
+    return orders.filter(order => !order.description.toLowerCase().includes('wallet top-up'));
+  }, [orders]);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Orders</CardTitle>
-        <CardDescription>A list of all the orders from your store.</CardDescription>
+        <CardTitle>Product Orders</CardTitle>
+        <CardDescription>A list of all the product orders from your store.</CardDescription>
       </CardHeader>
       <CardContent>
-        {orders.length > 0 ? (
+        {productOrders.length > 0 ? (
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -66,7 +71,7 @@ export default function AdminOrdersPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {orders.map((order) => {
+                    {productOrders.map((order) => {
                         const configKey = order.status.toUpperCase() as keyof typeof statusConfig;
                         const config = statusConfig[configKey] ?? statusConfig.PENDING;
                         return (
@@ -88,8 +93,8 @@ export default function AdminOrdersPage() {
         ) : (
             <div className="flex flex-col items-center justify-center gap-4 text-center h-64">
                 <Package className="h-16 w-16 text-muted-foreground" />
-                <h3 className="text-xl font-semibold">No Orders Yet</h3>
-                <p className="text-muted-foreground">New orders from your customers will appear here.</p>
+                <h3 className="text-xl font-semibold">No Product Orders Yet</h3>
+                <p className="text-muted-foreground">New product orders from your customers will appear here.</p>
             </div>
         )}
       </CardContent>
