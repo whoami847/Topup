@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
         }
         
         const gateway = gatewaySnapshot.docs[0].data() as Gateway;
+        if (!gateway.accessToken) {
+            return NextResponse.json({ message: 'The active payment gateway is missing its Access Token.' }, { status: 500 });
+        }
 
         // Generate a unique transaction ID
         const transaction_id = `TRN-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -55,11 +58,13 @@ export async function POST(req: NextRequest) {
 
         const protocol = req.headers.get('x-forwarded-proto') || 'http';
         const host = req.headers.get('host');
+        if (!host) {
+            return NextResponse.json({ message: 'Could not determine host from request headers.'}, { status: 500 });
+        }
         const baseUrl = `${protocol}://${host}`;
         
         // Prepare payload for RupantorPay
         const payload = {
-            access_token: gateway.accessToken,
             transaction_id: transaction_id,
             amount: amount,
             success_url: `${baseUrl}/api/payment/callback?transaction_id=${transaction_id}&status=success`,
@@ -70,10 +75,17 @@ export async function POST(req: NextRequest) {
             customer_phone: customer_phone,
         };
 
+        // Prepare headers for RupantorPay API
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-API-KEY': gateway.accessToken,
+            'X-CLIENT': host,
+        };
+
         // Call RupantorPay API
         const response = await fetch(RUPANTORPAY_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify(payload),
         });
 
@@ -84,7 +96,7 @@ export async function POST(req: NextRequest) {
         } else {
             // Update order to FAILED if initiation fails
             await updateDoc(doc(db, "orders", transaction_id), { status: 'FAILED' });
-            return NextResponse.json({ message: result.message || 'Payment initiation failed' }, { status: 500 });
+            return NextResponse.json({ message: result.message || 'Payment initiation failed' }, { status: response.status });
         }
     } catch (error) {
         console.error('Payment initiation error:', error);
