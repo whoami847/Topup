@@ -78,72 +78,111 @@ export default function AdminGatewaysPage() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Payment Gateways</CardTitle>
             <CardDescription>Manage the automated payment gateways for your store.</CardDescription>
           </div>
-          <Button onClick={handleNew}>
+          <Button onClick={handleNew} className="w-full sm:w-auto">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Gateway
           </Button>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Gateway Name</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {gateways.length > 0 ? (
-                gateways.map((gateway) => (
-                  <TableRow key={gateway.id}>
-                    <TableCell className="font-medium">
-                        {gateway.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={gateway.isLive ? 'destructive' : 'secondary'}>
-                        {gateway.isLive ? 'Live' : 'Sandbox'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={gateway.enabled ? 'default' : 'secondary'} className={gateway.enabled ? 'bg-green-500' : ''}>
-                        {gateway.enabled ? 'Enabled' : 'Disabled'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+          {gateways.length > 0 ? (
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Gateway Name</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {gateways.map((gateway) => (
+                      <TableRow key={gateway.id}>
+                        <TableCell className="font-medium">
+                          {gateway.name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={gateway.isLive ? 'destructive' : 'secondary'}>
+                            {gateway.isLive ? 'Live' : 'Sandbox'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={gateway.enabled ? 'default' : 'secondary'} className={gateway.enabled ? 'bg-green-500' : ''}>
+                            {gateway.enabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Actions</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Actions</span>
                               </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => handleEdit(gateway)}>
-                                  Edit
+                                Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDelete(gateway)} className="text-destructive">
-                                  Delete
+                                Delete
                               </DropdownMenuItem>
-                          </DropdownMenuContent>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {gateways.map((gateway) => (
+                  <Card key={gateway.id} className="p-4 shadow-sm">
+                    <div className="flex justify-between items-start gap-4">
+                      <p className="font-semibold text-base">{gateway.name}</p>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <Badge variant={gateway.isLive ? 'destructive' : 'secondary'}>
+                          {gateway.isLive ? 'Live' : 'Sandbox'}
+                        </Badge>
+                        <Badge variant={gateway.enabled ? 'default' : 'secondary'} className={gateway.enabled ? 'bg-green-500' : ''}>
+                          {gateway.enabled ? 'Enabled' : 'Disabled'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex justify-end items-center mt-3 pt-3 border-t">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            Actions <MoreHorizontal className="h-4 w-4 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(gateway)}>
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(gateway)} className="text-destructive">
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    No payment gateways found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="h-24 text-center text-muted-foreground flex items-center justify-center border rounded-lg">
+              <p>No payment gateways found.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
       
