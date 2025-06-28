@@ -72,7 +72,7 @@ export default function WalletPage() {
               </div>
             </AccordionTrigger>
             <AccordionContent className="p-4 pt-2">
-                <TransactionList />
+                <TransactionList transactions={transactions} />
             </AccordionContent>
           </AccordionItem>
         </Accordion>

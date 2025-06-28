@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, type Transaction } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Receipt } from "lucide-react";
 import { Button } from "./ui/button";
 import { 
     DropdownMenu, 
@@ -39,13 +39,15 @@ const statusConfig = {
     },
 };
 
-export function TransactionList({ isAdminView = false }: { isAdminView?: boolean }) {
-  const { transactions, updateTransactionStatus } = useAppStore();
+export function TransactionList({ transactions, isAdminView = false }: { transactions: Transaction[], isAdminView?: boolean }) {
+  const { updateTransactionStatus } = useAppStore();
 
   if (transactions.length === 0) {
     return (
         <div className="text-center text-muted-foreground py-16">
-            <p className="text-lg">You have no transactions yet.</p>
+            <Receipt className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-lg font-semibold">No Transactions Found</p>
+            <p className="text-sm">Relevant transactions will appear here.</p>
         </div>
     )
   }
