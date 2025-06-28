@@ -14,7 +14,9 @@ import {
     Archive, 
     ArrowRightLeft, 
     Settings,
-    Landmark
+    Landmark,
+    CreditCard,
+    Wallet
 } from 'lucide-react';
 import { subDays, format, parse, isAfter } from 'date-fns';
 import Link from 'next/link';
@@ -55,12 +57,14 @@ export default function AdminDashboardPage() {
     const navLinks = [
         { href: '/admin', label: 'Dashboard', icon: Home },
         { href: '/admin/orders', label: 'Orders', icon: Package },
+        { href: '/admin/wallet-top-ups', label: 'Wallet Top-ups', icon: Wallet },
         { href: '/admin/users', label: 'Users', icon: Users },
         { href: '/admin/categories', label: 'Categories', icon: Grid },
         { href: '/admin/products', label: 'Products', icon: Archive },
         { href: '/admin/product-prices', label: 'Product Prices', icon: DollarSign },
         { href: '/admin/transactions', label: 'Transactions', icon: ArrowRightLeft },
         { href: '/admin/payment-methods', label: 'Payment Methods', icon: Landmark },
+        { href: '/admin/gateways', label: 'Gateways', icon: CreditCard },
         { href: '/admin/settings', label: 'Settings', icon: Settings },
     ];
 
@@ -104,8 +108,8 @@ export default function AdminDashboardPage() {
             <>
                 <div className="mb-8">
                     <div className="h-8 w-48 animate-pulse rounded-lg bg-secondary/50 mb-4"></div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-                        {[...Array(9)].map((_, i) => (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-11 gap-4">
+                        {[...Array(11)].map((_, i) => (
                             <div key={i} className="h-24 w-full animate-pulse rounded-lg bg-secondary/50"></div>
                         ))}
                     </div>
@@ -124,7 +128,7 @@ export default function AdminDashboardPage() {
     <>
       <div className="mb-8">
           <h1 className="text-2xl font-semibold mb-4">Admin Controls</h1>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-11 gap-4">
               {navLinks.map(link => <QuickNavCard key={link.href} {...link} />)}
           </div>
       </div>

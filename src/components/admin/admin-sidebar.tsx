@@ -14,7 +14,8 @@ import {
   DollarSign, 
   ArrowRightLeft,
   Landmark,
-  CreditCard
+  CreditCard,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
   { href: '/admin/orders', label: 'Orders', icon: Package },
+  { href: '/admin/wallet-top-ups', label: 'Wallet Top-ups', icon: Wallet },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/categories', label: 'Categories', icon: Grid },
   { href: '/admin/products', label: 'Products', icon: Archive },
