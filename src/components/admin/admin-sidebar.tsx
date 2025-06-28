@@ -22,15 +22,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
-  { href: '/admin/orders', label: 'Orders', icon: Package },
-  { href: '/admin/wallet-top-ups', label: 'Wallet Top-ups', icon: Wallet },
   { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/orders', label: 'Orders', icon: Package },
   { href: '/admin/categories', label: 'Categories', icon: Grid },
   { href: '/admin/products', label: 'Products', icon: Archive },
   { href: '/admin/product-prices', label: 'Product Prices', icon: DollarSign },
-  { href: '/admin/transactions', label: 'Transactions', icon: ArrowRightLeft },
   { href: '/admin/payment-methods', label: 'Payment Methods', icon: Landmark },
+  { href: '/admin/wallet-top-ups', label: 'Wallet Top-ups', icon: Wallet },
   { href: '/admin/gateways', label: 'Gateways', icon: CreditCard },
+  { href: '/admin/transactions', label: 'Transactions', icon: ArrowRightLeft },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
