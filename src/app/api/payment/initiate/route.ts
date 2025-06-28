@@ -1,11 +1,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, setDoc, collection, query, where, getDocs, limit, getDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs, limit, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Gateway } from '@/lib/gateways';
 import type { Order } from '@/lib/store';
-import { getAuth } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { format } from 'date-fns';
 
 const RUPANTORPAY_API_URL = 'https://payment.rupantorpay.com/api/payment/checkout';
@@ -13,16 +11,21 @@ const RUPANTORPAY_API_URL = 'https://payment.rupantorpay.com/api/payment/checkou
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { amount, customer_name, customer_email, customer_phone } = body;
-        
-        // This is a server-side operation, so we need to get the current user from the session cookie
-        // For this environment, we'll trust the frontend sends the correct user info, but in production, use firebase-admin to verify session.
-        const authHeader = req.headers.get('Authorization');
-        // A real implementation should verify the token
-        if (!authHeader) {
-           // For now, we will proceed without strict auth for simplicity as per the setup
+        const { amount, userId, customer_name, customer_email, customer_phone } = body;
+
+        // Validate if userId is present
+        if (!userId) {
+            return NextResponse.json({ message: 'User ID is missing.' }, { status: 400 });
         }
 
+        // Fetch user directly by ID to ensure they exist
+        const userRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userRef);
+
+        if (!userDoc.exists()) {
+            return NextResponse.json({ message: 'User not found.' }, { status: 404 });
+        }
+        
         // Fetch active gateway from Firestore
         const gatewaysRef = collection(db, 'gateways');
         const q = query(gatewaysRef, where('enabled', '==', true), limit(1));
@@ -37,13 +40,6 @@ export async function POST(req: NextRequest) {
         // Generate a unique transaction ID
         const transaction_id = `TRN-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
         
-        const userQuery = query(collection(db, 'users'), where('email', '==', customer_email), limit(1));
-        const userSnapshot = await getDocs(userQuery);
-        if (userSnapshot.empty) {
-             return NextResponse.json({ message: 'User not found.' }, { status: 404 });
-        }
-        const user = userSnapshot.docs[0].data();
-
         // Create an order document in Firestore
         const newOrder: Order = {
             id: transaction_id,
@@ -51,7 +47,7 @@ export async function POST(req: NextRequest) {
             description: `Wallet Top-up of ৳${amount}`,
             amount: Number(amount),
             status: 'PENDING',
-            userId: user.uid,
+            userId: userId,
             gatewayId: gateway.id,
             paymentDetails: { customer_name, customer_email, customer_phone }
         };

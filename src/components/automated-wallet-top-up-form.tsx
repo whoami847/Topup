@@ -51,6 +51,7 @@ export function AutomatedWalletTopUpForm() {
 
     const payload = {
       amount: values.amount,
+      userId: currentUser.uid,
       customer_name: currentUser.email.split('@')[0],
       customer_email: currentUser.email,
       customer_phone: '01000000000', // Placeholder phone
