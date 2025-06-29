@@ -32,6 +32,8 @@ import type { MainCategory, TopUpCategory, Product } from './products';
 import type { PaymentMethod } from './payments';
 import type { Gateway } from './gateways';
 import { format } from 'date-fns';
+import type { SiteSettings } from './settings';
+import { defaultSiteSettings } from './settings-data';
 
 export type Order = {
   id: string;
@@ -76,6 +78,7 @@ type AppState = {
   topUpCategories: TopUpCategory[];
   paymentMethods: PaymentMethod[];
   gateways: Gateway[];
+  siteSettings: SiteSettings | null;
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthDialogOpen: boolean;
@@ -112,6 +115,7 @@ type AppState = {
   manageUserWallet: (userId: string, amount: number, type: 'add' | 'subtract', reason: string) => Promise<void>;
   toggleUserBanStatus: (userId: string, isBanned: boolean) => Promise<void>;
   toggleUserAdminStatus: (userId: string, isAdmin: boolean) => Promise<void>;
+  updateSiteSettings: (newSettings: Partial<SiteSettings>) => Promise<void>;
 };
 
 let unsubscribers: (() => void)[] = [];
@@ -130,6 +134,7 @@ export const useAppStore = create<AppState>()(
       topUpCategories: [],
       paymentMethods: [],
       gateways: [],
+      siteSettings: null,
       currentUser: null,
       isAuthLoading: true,
       isAuthDialogOpen: false,
@@ -160,20 +165,13 @@ export const useAppStore = create<AppState>()(
                     console.log('Product data seeding complete.');
                 }
 
-                // Seed Gateway Data
-                const gatewayRef = collection(db, 'gateways');
-                const gatewaySnapshot = await getDocs(gatewayRef);
-                if (gatewaySnapshot.empty) {
-                    console.log('No gateways found, seeding default RupantorPay gateway...');
-                    const gatewayId = `rupantorpay-${Date.now()}`;
-                    const newGateway: Omit<Gateway, 'id'> = {
-                        name: 'RupantorPay',
-                        storePassword: '3FIUryatXurKtWRITL7vflucojAVWXjo7I6c7hKW6sky5wvKfK',
-                        isLive: false, // Default to sandbox mode for safety
-                        enabled: true,
-                    };
-                    await setDoc(doc(db, 'gateways', gatewayId), newGateway);
-                    console.log('Default gateway seeded successfully.');
+                // Seed Site Settings
+                const settingsDocRef = doc(db, 'siteSettings', 'main');
+                const settingsDoc = await getDoc(settingsDocRef);
+                if (!settingsDoc.exists()) {
+                    console.log('Site settings not found, seeding with default data...');
+                    await setDoc(settingsDocRef, defaultSiteSettings);
+                    console.log('Site settings seeded successfully.');
                 }
             } catch (error) {
                 console.error("Error seeding data:", error);
@@ -198,9 +196,14 @@ export const useAppStore = create<AppState>()(
            const unsubGateways = onSnapshot(collection(db, 'gateways'), snapshot => {
               set({ gateways: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Gateway)) });
           });
+          const unsubSettings = onSnapshot(doc(db, 'siteSettings', 'main'), (doc) => {
+              if (doc.exists()) {
+                  set({ siteSettings: doc.data() as SiteSettings });
+              }
+          });
           
           const unsubAuth = onAuthStateChanged(auth, async (user) => {
-              const allSubs = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
+              const allSubs = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubSettings, unsubAuth];
               // Detach all non-auth listeners
               unsubscribers.filter(unsub => !allSubs.includes(unsub)).forEach(unsub => unsub());
 
@@ -232,14 +235,14 @@ export const useAppStore = create<AppState>()(
                       set({ transactions: snapshot.docs.map(d => ({id: d.id, ...d.data()}) as Transaction) });
                   });
 
-                  unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, userDocSub, ordersSub, transactionsSub, unsubAuth];
+                  unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubSettings, userDocSub, ordersSub, transactionsSub, unsubAuth];
               } else {
                   set({ currentUser: null, orders: [], transactions: [], balance: 0 });
-                   unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
+                   unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubSettings, unsubAuth];
               }
               set({ isAuthLoading: false });
           });
-          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
+          unsubscribers = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubSettings, unsubAuth];
       },
 
       setAuthDialogOpen: (open) => set({ isAuthDialogOpen: open }),
@@ -675,5 +678,10 @@ export const useAppStore = create<AppState>()(
         }
       },
       
+      updateSiteSettings: async (newSettings: Partial<SiteSettings>) => {
+        const settingsRef = doc(db, 'siteSettings', 'main');
+        await updateDoc(settingsRef, newSettings);
+      },
+
     })
 );

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,55 +7,39 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from '@/lib/utils';
-
-const banners = [
-  {
-    src: 'https://placehold.co/1920x1080.png',
-    alt: 'Free Fire Diamonds Banner',
-    title: 'FREE FIRE DIAMONDS',
-    description: 'Get your game diamonds instantly and securely. The best prices, guaranteed.',
-    buttonText: 'Top Up Now',
-    buttonLink: '/top-up/diamond-top-up-bd',
-    aiHint: 'gaming background'
-  },
-  {
-    src: 'https://placehold.co/1920x1080.png',
-    alt: 'PUBG UC Banner',
-    title: 'PUBG MOBILE UC',
-    description: 'Load up on Unknown Cash and dominate the battlegrounds.',
-    buttonText: 'Get UC Now',
-    buttonLink: '/top-up/pubg-mobile-uc',
-    aiHint: 'battle royale action'
-  },
-  {
-    src: 'https://placehold.co/1920x1080.png',
-    alt: 'Vouchers Banner',
-    title: 'GAME VOUCHERS',
-    description: 'All your favorite game vouchers in one place.',
-    buttonText: 'Browse Vouchers',
-    buttonLink: '/', 
-    aiHint: 'gift cards gaming'
-  }
-];
-
+import { useAppStore } from '@/lib/store';
+import { Skeleton } from './ui/skeleton';
 
 export function HeroSection() {
+    const { siteSettings } = useAppStore();
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            setCurrentIndex(prevIndex => (prevIndex + 1) % banners.length);
-        }, 3000); // Change slide every 3 seconds
+    const banners = siteSettings?.banners.filter(b => b.enabled) || [];
 
-        return () => clearInterval(intervalId);
-    }, []);
+    useEffect(() => {
+        if (banners.length > 1) {
+            const intervalId = setInterval(() => {
+                setCurrentIndex(prevIndex => (prevIndex + 1) % banners.length);
+            }, 5000); // Change slide every 5 seconds
+
+            return () => clearInterval(intervalId);
+        }
+    }, [banners.length]);
+    
+    if (!siteSettings) {
+        return <Skeleton className="w-full h-[40vh] md:h-[60vh]" />;
+    }
+
+    if (banners.length === 0) {
+        return null; // Don't render the hero section if no banners are enabled
+    }
 
     return (
         <section className="relative w-full h-[40vh] md:h-[60vh] flex items-center justify-center text-center text-white overflow-hidden">
             {/* Background Images */}
             {banners.map((banner, index) => (
                 <Image
-                    key={index}
+                    key={banner.id}
                     src={banner.src}
                     alt={banner.alt}
                     fill
@@ -74,7 +59,7 @@ export function HeroSection() {
             <div className="relative z-20 container">
               {banners.map((banner, index) => (
                   <div 
-                      key={index}
+                      key={banner.id}
                       className={cn(
                           "absolute inset-0 flex flex-col items-center justify-center gap-6 p-4 transition-all duration-1000 ease-in-out",
                           index === currentIndex ? "opacity-100 scale-100" : "opacity-0 scale-95"
