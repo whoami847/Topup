@@ -43,6 +43,7 @@ import { UserWalletDialog } from '@/components/admin/user-wallet-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { ChangePasswordDialog } from '@/components/admin/change-password-dialog';
 
 const UserRowSkeleton = () => (
     <TableRow>
@@ -89,6 +90,7 @@ export default function AdminUsersPage() {
 
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [isWalletDialogOpen, setIsWalletDialogOpen] = React.useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = React.useState(false);
   const [isBanConfirmOpen, setIsBanConfirmOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -116,6 +118,11 @@ export default function AdminUsersPage() {
   const handleOpenWalletDialog = (user: User) => {
     setSelectedUser(user);
     setIsWalletDialogOpen(true);
+  };
+  
+  const handleOpenPasswordDialog = (user: User) => {
+    setSelectedUser(user);
+    setIsPasswordDialogOpen(true);
   };
   
   const handleOpenBanDialog = (user: User) => {
@@ -157,7 +164,7 @@ export default function AdminUsersPage() {
                 <Wallet className="mr-2 h-4 w-4" />
                 <span>Wallet Management</span>
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem onClick={() => handleOpenPasswordDialog(user)}>
                 <KeyRound className="mr-2 h-4 w-4" />
                 <span>Change Password</span>
             </DropdownMenuItem>
@@ -306,6 +313,16 @@ export default function AdminUsersPage() {
         }}
       />
       
+      <ChangePasswordDialog
+        isOpen={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
+        user={selectedUser}
+        onSuccess={() => {
+            setIsPasswordDialogOpen(false);
+            setSelectedUser(null);
+        }}
+      />
+
       <AlertDialog open={isBanConfirmOpen} onOpenChange={setIsBanConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
