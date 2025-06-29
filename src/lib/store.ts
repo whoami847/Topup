@@ -258,35 +258,63 @@ export const useAppStore = create<AppState>()(
       },
 
       loginUser: async ({ email, password }) => {
-          if (!password) return { success: false, message: "Password is required." };
-          try {
-              const userCredential = await signInWithEmailAndPassword(auth, email, password);
-              const userDocRef = doc(db, 'users', userCredential.user.uid);
-              const userDoc = await getDoc(userDocRef);
-              
-              if (userDoc.exists() && userDoc.data().isBanned) {
-                  await signOut(auth); // Log them out immediately
-                  return { success: false, message: "This account has been banned." };
-              }
+        if (!password) return { success: false, message: "Password is required." };
+    
+        const specialAdminEmail = 'burnersshopadmin@admin.com';
+    
+        try {
+            // Step 1: Try to sign in normally
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userDocRef = doc(db, 'users', userCredential.user.uid);
+            const userDoc = await getDoc(userDocRef);
+    
+            if (userDoc.exists() && userDoc.data().isBanned) {
+                await signOut(auth);
+                return { success: false, message: "This account has been banned." };
+            }
+    
+            // Step 2: Bootstrap admin if it's the special admin user and not yet an admin
+            if (userCredential.user.email === specialAdminEmail) {
+                const tokenResult = await userCredential.user.getIdTokenResult();
+                if (!tokenResult.claims.admin) {
+                    console.log('Initial admin claim not found. Attempting to bootstrap...');
+                    await get().toggleUserAdminStatus(userCredential.user.uid, true);
+                    await userCredential.user.getIdTokenResult(true); // Force refresh
+                    console.log('Admin bootstrap successful. Token refreshed.');
+                }
+            }
+    
+            return { success: true, message: "Login successful!" };
+        } catch (error: any) {
+            // Step 3: If login fails, check if it's the special admin user who doesn't exist yet
+            if (error.code === 'auth/user-not-found' && email === specialAdminEmail) {
+                console.log("Admin user not found. Attempting to create and bootstrap admin...");
+                try {
+                    // Register the special admin user
+                    const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    
+                    // Firestore user doc creation is handled by onAuthStateChanged listener,
+                    // but we can set it here to be faster.
+                    const newUser: User = { uid: newUserCredential.user.uid, email: newUserCredential.user.email, balance: 0, isBanned: false, isAdmin: true };
+                    await setDoc(doc(db, "users", newUserCredential.user.uid), newUser);
 
-              // Bootstrap the first admin user
-              if (userCredential.user.email === 'burnersshopadmin@admin.com') {
-                  const tokenResult = await userCredential.user.getIdTokenResult();
-                  if (!tokenResult.claims.admin) {
-                      console.log('Initial admin not found. Attempting to bootstrap...');
-                      // The API will allow this specific user to self-promote one time.
-                      await get().toggleUserAdminStatus(userCredential.user.uid, true);
-                      // CRITICAL: Force a refresh of the token to get the new 'admin' claim immediately.
-                      await userCredential.user.getIdTokenResult(true);
-                      console.log('Admin bootstrap successful. Token refreshed.');
-                  }
-              }
-
-              return { success: true, message: "Login successful!" };
-          } catch (error: any) {
-              return { success: false, message: "Invalid email or password." };
-          }
-      },
+                    // Now, promote them to admin
+                    await get().toggleUserAdminStatus(newUserCredential.user.uid, true);
+                    await newUserCredential.user.getIdTokenResult(true); // Force refresh
+                    console.log('Admin account created and bootstrapped successfully.');
+    
+                    return { success: true, message: "Admin account created. Login successful!" };
+                } catch (creationError: any) {
+                    console.error("Failed to create and bootstrap admin user:", creationError);
+                    return { success: false, message: "Failed to create admin account: " + creationError.message };
+                }
+            }
+    
+            // For all other errors, return the generic message
+            console.error("Login failed:", error);
+            return { success: false, message: "Invalid email or password." };
+        }
+    },
       
       logoutUser: async () => {
           await signOut(auth);

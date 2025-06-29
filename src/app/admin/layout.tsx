@@ -6,8 +6,6 @@ import { ReactNode, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
-import { Lock } from 'lucide-react';
 
 function AdminLayoutSkeleton() {
     return (
@@ -21,40 +19,26 @@ function AdminLayoutSkeleton() {
     );
 }
 
-function AccessDenied() {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-muted/40">
-            <Card className="w-full max-w-md mx-4">
-                <CardContent className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-                    <Lock className="h-16 w-16 text-destructive mb-4" />
-                    <h1 className="text-3xl font-bold">Access Denied</h1>
-                    <p className="text-muted-foreground">
-                        You do not have permission to view this page.
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
-    )
-}
-
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { currentUser, isAuthLoading } = useAppStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthLoading && !currentUser) {
-      router.push('/');
+    if (isAuthLoading) {
+      return; // Wait until loading is complete
+    }
+
+    if (!currentUser || !currentUser.isAdmin) {
+      router.push('/'); // Redirect to home if not logged in or not an admin
     }
   }, [currentUser, isAuthLoading, router]);
 
-  if (isAuthLoading) {
+  // While loading or if user is not an admin, show a skeleton to prevent content flash
+  if (isAuthLoading || !currentUser || !currentUser.isAdmin) {
     return <AdminLayoutSkeleton />;
   }
-  
-  if (!currentUser?.isAdmin) {
-    return <AccessDenied />;
-  }
 
+  // Render the admin layout only if the user is a verified admin
   return (
     <div className="flex min-h-screen bg-muted/40">
       <AdminSidebar />
