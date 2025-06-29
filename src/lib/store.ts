@@ -279,8 +279,10 @@ export const useAppStore = create<AppState>()(
                 if (!tokenResult.claims.admin) {
                     console.log('Initial admin claim not found. Attempting to bootstrap...');
                     await get().toggleUserAdminStatus(userCredential.user.uid, true);
-                    await userCredential.user.getIdTokenResult(true); // Force refresh
-                    console.log('Admin bootstrap successful. Token refreshed.');
+                    const freshToken = await userCredential.user.getIdTokenResult(true); 
+                    
+                    const userFromDb = (await getDoc(userDocRef)).data() as User;
+                    set({ currentUser: { ...userFromDb, isAdmin: freshToken.claims.admin === true } });
                 }
             }
     
@@ -314,7 +316,7 @@ export const useAppStore = create<AppState>()(
             console.error("Login failed:", error);
             return { success: false, message: "Invalid email or password." };
         }
-    },
+      },
       
       logoutUser: async () => {
           await signOut(auth);
@@ -642,11 +644,11 @@ export const useAppStore = create<AppState>()(
 
       toggleUserAdminStatus: async (userId, isAdmin) => {
         const { currentUser } = get();
-        if (!currentUser) {
-          throw new Error("Current user not found. Cannot determine admin status.");
+        if (!auth.currentUser) {
+          throw new Error("User not authenticated.");
         }
         
-        const idToken = await auth.currentUser?.getIdToken();
+        const idToken = await auth.currentUser.getIdToken();
         if (!idToken) {
             throw new Error("Authentication token not found.");
         }
@@ -663,6 +665,13 @@ export const useAppStore = create<AppState>()(
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.message || 'Failed to update user role.');
+        }
+
+        // After a successful role change, force a token refresh for the current user
+        // if they are the one being changed. This ensures their own isAdmin status
+        // is updated immediately on the client.
+        if (currentUser?.uid === userId) {
+          await auth.currentUser?.getIdToken(true);
         }
       },
       
