@@ -1,22 +1,52 @@
 
 'use client';
 
+import * as React from 'react';
 import { useAppStore } from '@/lib/store';
 import { notFound, useParams } from 'next/navigation';
 import { TopUpForm } from '@/components/top-up-form';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { TopUpCategory } from '@/lib/products';
+
+const PageSkeleton = () => (
+    <div className="container py-8 md:py-12">
+        <div className="grid lg:grid-cols-3 gap-8 md:gap-12 items-start">
+            <div className="lg:col-span-2">
+                <Skeleton className="h-[500px] w-full" />
+            </div>
+            <div className="lg:col-span-1">
+                <Skeleton className="h-[200px] w-full" />
+            </div>
+        </div>
+    </div>
+);
 
 export default function TopUpPage() {
   const params = useParams<{ id: string }>();
   const { topUpCategories } = useAppStore();
-  const category = topUpCategories.find((c) => c.slug === params.id);
+  const [category, setCategory] = React.useState<TopUpCategory | null | undefined>(undefined);
 
-  if (!category) {
+  React.useEffect(() => {
+    if (topUpCategories.length > 0) {
+      const foundCategory = topUpCategories.find((c) => c.slug === params.id);
+      setCategory(foundCategory || null);
+    }
+  }, [topUpCategories, params.id]);
+
+  // If category is explicitly null (not found after searching), show notFound page.
+  if (category === null) {
     notFound();
   }
 
+  // If category is undefined (still loading/searching), show a skeleton.
+  if (category === undefined) {
+    return <PageSkeleton />;
+  }
+
+  // If we reach here, category is found and valid.
   return (
     <div className="container py-8 md:py-12">
       <div className="grid lg:grid-cols-3 gap-8 md:gap-12 items-start">
