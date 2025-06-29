@@ -263,10 +263,25 @@ export const useAppStore = create<AppState>()(
               const userCredential = await signInWithEmailAndPassword(auth, email, password);
               const userDocRef = doc(db, 'users', userCredential.user.uid);
               const userDoc = await getDoc(userDocRef);
+              
               if (userDoc.exists() && userDoc.data().isBanned) {
                   await signOut(auth); // Log them out immediately
                   return { success: false, message: "This account has been banned." };
               }
+
+              // Bootstrap the first admin user
+              if (userCredential.user.email === 'burnersshopadmin@admin.com') {
+                  const tokenResult = await userCredential.user.getIdTokenResult();
+                  if (!tokenResult.claims.admin) {
+                      console.log('Initial admin not found. Attempting to bootstrap...');
+                      // The API will allow this specific user to self-promote one time.
+                      await get().toggleUserAdminStatus(userCredential.user.uid, true);
+                      // CRITICAL: Force a refresh of the token to get the new 'admin' claim immediately.
+                      await userCredential.user.getIdTokenResult(true);
+                      console.log('Admin bootstrap successful. Token refreshed.');
+                  }
+              }
+
               return { success: true, message: "Login successful!" };
           } catch (error: any) {
               return { success: false, message: "Invalid email or password." };
@@ -599,8 +614,8 @@ export const useAppStore = create<AppState>()(
 
       toggleUserAdminStatus: async (userId, isAdmin) => {
         const { currentUser } = get();
-        if (!currentUser?.isAdmin) {
-          throw new Error("Forbidden: Caller is not an admin.");
+        if (!currentUser) {
+          throw new Error("Current user not found. Cannot determine admin status.");
         }
         
         const idToken = await auth.currentUser?.getIdToken();

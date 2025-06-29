@@ -47,8 +47,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     }
   }, [currentUser, isAuthLoading, router]);
 
-  if (isAuthLoading || !currentUser) {
+  if (isAuthLoading) {
     return <AdminLayoutSkeleton />;
+  }
+  
+  if (!currentUser?.isAdmin) {
+    return <AccessDenied />;
   }
 
   return (
