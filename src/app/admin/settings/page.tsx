@@ -59,6 +59,7 @@ const settingsSchema = z.object({
   aboutUsPage: z.string().min(1, 'About Us content cannot be empty.'),
   termsPage: z.string().min(1, 'Terms of Service content cannot be empty.'),
   privacyPage: z.string().min(1, 'Privacy Policy content cannot be empty.'),
+  tutorialVideoUrl: z.string().url({ message: 'Please enter a valid YouTube embed URL.' }).or(z.literal('')),
   supportPhone: z.string(),
   supportWhatsapp: z.string(),
   socialLinks: z.array(socialLinkSchema),
@@ -130,10 +131,11 @@ export default function AdminSettingsPage() {
         </Card>
 
         <Tabs defaultValue="banners">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="banners">Banners</TabsTrigger>
             <TabsTrigger value="pages">Page Content</TabsTrigger>
             <TabsTrigger value="contact">Contact & Socials</TabsTrigger>
+            <TabsTrigger value="general">General</TabsTrigger>
           </TabsList>
           
           <TabsContent value="banners" className="mt-6">
@@ -385,6 +387,29 @@ export default function AdminSettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="general" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>General Settings</CardTitle>
+                <CardDescription>Manage other general settings for your website.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="tutorialVideoUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tutorial Video URL</FormLabel>
+                      <FormControl><Input placeholder="https://www.youtube.com/embed/..." {...field} /></FormControl>
+                      <FormDescription>Enter the full embed URL for the YouTube tutorial video.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         <div className="flex justify-end sticky bottom-4">
@@ -396,4 +421,3 @@ export default function AdminSettingsPage() {
     </Form>
   );
 }
-

@@ -23,6 +23,7 @@ export interface SiteSettings {
   aboutUsPage: string;
   termsPage: string;
   privacyPage: string;
+  tutorialVideoUrl: string;
   supportPhone: string;
   supportWhatsapp: string;
   socialLinks: SocialLink[];

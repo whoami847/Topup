@@ -190,6 +190,7 @@ export const defaultSiteSettings: SiteSettings = {
         </div>
     </div>
   `,
+  tutorialVideoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
   supportPhone: '+123456789',
   supportWhatsapp: '123456789',
   socialLinks: [
