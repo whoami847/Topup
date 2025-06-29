@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAppStore, type User } from '@/lib/store';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Users, Wallet, ShoppingBag, MoreHorizontal, KeyRound, Ban } from 'lucide-react';
+import { Users, Wallet, ShoppingBag, MoreHorizontal, KeyRound, Ban, ShieldCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { UserWalletDialog } from '@/components/admin/user-wallet-dialog';
@@ -84,7 +84,7 @@ const UserCardSkeleton = () => (
 );
 
 export default function AdminUsersPage() {
-  const { users, orders, toggleUserBanStatus } = useAppStore();
+  const { users, orders, toggleUserBanStatus, toggleUserAdminStatus, currentUser } = useAppStore();
   const [isClient, setIsClient] = React.useState(false);
   const { toast } = useToast();
 
@@ -92,6 +92,8 @@ export default function AdminUsersPage() {
   const [isWalletDialogOpen, setIsWalletDialogOpen] = React.useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = React.useState(false);
   const [isBanConfirmOpen, setIsBanConfirmOpen] = React.useState(false);
+  const [isRoleConfirmOpen, setIsRoleConfirmOpen] = React.useState(false);
+
 
   React.useEffect(() => {
     setIsClient(true);
@@ -129,6 +131,11 @@ export default function AdminUsersPage() {
       setSelectedUser(user);
       setIsBanConfirmOpen(true);
   };
+  
+  const handleOpenRoleDialog = (user: User) => {
+    setSelectedUser(user);
+    setIsRoleConfirmOpen(true);
+  };
 
   const handleToggleBan = async () => {
     if (!selectedUser) return;
@@ -150,6 +157,27 @@ export default function AdminUsersPage() {
         setSelectedUser(null);
     }
   };
+  
+  const handleToggleRole = async () => {
+    if (!selectedUser) return;
+    try {
+      const newAdminStatus = !selectedUser.isAdmin;
+      await toggleUserAdminStatus(selectedUser.uid, newAdminStatus);
+      toast({
+        title: "Success",
+        description: `User role has been updated.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update user's role.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRoleConfirmOpen(false);
+      setSelectedUser(null);
+    }
+  };
 
   const renderActionsMenu = (user: User) => (
     <DropdownMenu>
@@ -169,9 +197,14 @@ export default function AdminUsersPage() {
                 <span>Change Password</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+             <DropdownMenuItem onClick={() => handleOpenRoleDialog(user)} disabled={user.uid === currentUser?.uid}>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                <span>{user.isAdmin ? 'Demote from Admin' : 'Promote to Admin'}</span>
+            </DropdownMenuItem>
             <DropdownMenuItem 
                 onClick={() => handleOpenBanDialog(user)} 
                 className={cn(user.isBanned ? "text-green-500 focus:text-green-600" : "text-destructive focus:text-destructive")}
+                disabled={user.uid === currentUser?.uid}
             >
                 <Ban className="mr-2 h-4 w-4" />
                 <span>{user.isBanned ? 'Unban User' : 'Ban User'}</span>
@@ -248,7 +281,10 @@ export default function AdminUsersPage() {
                                 </TableCell>
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell>
-                                    {user.isBanned && <Badge variant="destructive">Banned</Badge>}
+                                    <div className="flex items-center gap-2">
+                                        {user.isAdmin && <Badge variant="secondary" className="border-primary/50 text-primary">Admin</Badge>}
+                                        {user.isBanned && <Badge variant="destructive">Banned</Badge>}
+                                    </div>
                                 </TableCell>
                                 <TableCell className="text-right">৳{user.balance.toFixed(2)}</TableCell>
                                 <TableCell className="text-right">৳{user.totalSpent.toFixed(2)}</TableCell>
@@ -274,7 +310,10 @@ export default function AdminUsersPage() {
                                 <div className="min-w-0">
                                     <p className="font-semibold text-base truncate">{user.email?.split('@')[0]}</p>
                                     <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                                    {user.isBanned && <Badge variant="destructive" className="mt-1">Banned</Badge>}
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {user.isAdmin && <Badge variant="secondary" className="border-primary/50 text-primary">Admin</Badge>}
+                                        {user.isBanned && <Badge variant="destructive">Banned</Badge>}
+                                    </div>
                                 </div>
                               </div>
                               {renderActionsMenu(user)}
@@ -339,6 +378,27 @@ export default function AdminUsersPage() {
               className={!selectedUser?.isBanned ? 'bg-destructive hover:bg-destructive/90' : 'bg-green-600 hover:bg-green-700'}
             >
               {selectedUser?.isBanned ? 'Confirm Unban' : 'Confirm Ban'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <AlertDialog open={isRoleConfirmOpen} onOpenChange={setIsRoleConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to {selectedUser?.isAdmin ? 'demote' : 'promote'} the user <span className="font-bold">{selectedUser?.email}</span> to {selectedUser?.isAdmin ? 'a regular user' : 'an admin'}.
+              This will change their access permissions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleToggleRole} 
+              className={!selectedUser?.isAdmin ? 'bg-primary hover:bg-primary/90' : 'bg-destructive hover:bg-destructive/90'}
+            >
+              {selectedUser?.isAdmin ? 'Confirm Demotion' : 'Confirm Promotion'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

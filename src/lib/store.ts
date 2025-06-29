@@ -7,7 +7,8 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    getIdTokenResult,
 } from 'firebase/auth';
 import {
     collection,
@@ -58,6 +59,7 @@ export type User = {
     email: string | null;
     balance: number;
     isBanned?: boolean;
+    isAdmin?: boolean;
 };
 
 type Credentials = {
@@ -109,6 +111,7 @@ type AppState = {
   deleteGateway: (id: string) => Promise<void>;
   manageUserWallet: (userId: string, amount: number, type: 'add' | 'subtract', reason: string) => Promise<void>;
   toggleUserBanStatus: (userId: string, isBanned: boolean) => Promise<void>;
+  toggleUserAdminStatus: (userId: string, isAdmin: boolean) => Promise<void>;
 };
 
 let unsubscribers: (() => void)[] = [];
@@ -196,21 +199,24 @@ export const useAppStore = create<AppState>()(
               set({ gateways: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Gateway)) });
           });
           
-          const unsubAuth = onAuthStateChanged(auth, user => {
+          const unsubAuth = onAuthStateChanged(auth, async (user) => {
               const allSubs = [unsubMain, unsubTopUp, unsubUsers, unsubPaymentMethods, unsubGateways, unsubAuth];
               // Detach all non-auth listeners
               unsubscribers.filter(unsub => !allSubs.includes(unsub)).forEach(unsub => unsub());
 
               if (user) {
+                  const idTokenResult = await user.getIdTokenResult(true); // Force refresh to get latest claims
+                  const isAdmin = idTokenResult.claims.admin === true;
+
                   const userDocSub = onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
                        if (!userDoc.exists()) {
                           console.log(`Creating user profile for ${user.uid}`);
-                          const newUser: User = { uid: user.uid, email: user.email, balance: 0, isBanned: false };
+                          const newUser: User = { uid: user.uid, email: user.email, balance: 0, isBanned: false, isAdmin };
                           await setDoc(doc(db, "users", user.uid), newUser);
                           set({ currentUser: newUser, balance: 0 });
                        } else {
                            const userData = userDoc.data() as User;
-                           set({ currentUser: userData, balance: userData.balance });
+                           set({ currentUser: { ...userData, isAdmin }, balance: userData.balance });
                        }
                   });
                   
@@ -243,7 +249,7 @@ export const useAppStore = create<AppState>()(
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            const newUser: User = { uid: user.uid, email: user.email, balance: 0, isBanned: false };
+            const newUser: User = { uid: user.uid, email: user.email, balance: 0, isBanned: false, isAdmin: false };
             await setDoc(doc(db, "users", user.uid), newUser);
             return { success: true, message: "Registration successful!" };
         } catch (error: any) {
@@ -590,10 +596,32 @@ export const useAppStore = create<AppState>()(
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, { isBanned });
       },
+
+      toggleUserAdminStatus: async (userId, isAdmin) => {
+        const { currentUser } = get();
+        if (!currentUser?.isAdmin) {
+          throw new Error("Forbidden: Caller is not an admin.");
+        }
+        
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) {
+            throw new Error("Authentication token not found.");
+        }
+        
+        const response = await fetch('/api/user/set-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ userId, isAdmin }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to update user role.');
+        }
+      },
       
     })
 );
-
-
-    
-
