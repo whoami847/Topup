@@ -66,6 +66,7 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
                         src={category.imageUrl}
                         alt={category.title}
                         fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint={category.imageHint}
                       />
@@ -89,6 +90,7 @@ export function TopUpCategories({ selectedCategory, setSelectedCategory }: TopUp
                         src={category.imageUrl}
                         alt={category.title}
                         fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint={category.imageHint}
                       />

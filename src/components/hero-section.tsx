@@ -43,6 +43,7 @@ export function HeroSection() {
                     src={banner.src}
                     alt={banner.alt}
                     fill
+                    sizes="100vw"
                     className={cn(
                         "object-cover z-0 transition-opacity duration-1000 ease-in-out",
                         index === currentIndex ? "opacity-100" : "opacity-0"
