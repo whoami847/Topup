@@ -43,7 +43,7 @@ const bannerSchema = z.object({
   description: z.string().min(1, 'Description is required.'),
   buttonText: z.string().min(1, 'Button text is required.'),
   buttonLink: z.string().min(1, 'Button link is required.'),
-  aiHint: z.string().optional(),
+  aiHint: z.string().min(1, 'AI hint is required.'),
   enabled: z.boolean(),
 });
 
@@ -255,7 +255,7 @@ export default function AdminSettingsPage() {
                         </div>
                     </Card>
                 ))}
-                 <Button type="button" variant="outline" size="sm" onClick={() => append({ id: `banner-${Date.now()}`, src: '', alt: 'new banner', title: '', description: '', buttonText: '', buttonLink: '/', enabled: true })}>
+                 <Button type="button" variant="outline" size="sm" onClick={() => append({ id: `banner-${Date.now()}`, src: '', alt: 'new banner', title: '', description: '', buttonText: '', buttonLink: '/', aiHint: '', enabled: true })}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Banner
                 </Button>

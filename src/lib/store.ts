@@ -525,7 +525,8 @@ export const useAppStore = create<AppState>()(
       },
 
       updateMainCategory: async (id, updatedData) => {
-        const { id: _, ...dataToUpdate } = updatedData;
+        // Remove id from updatedData if it exists to avoid updating the document's id
+        const { id: _removedId, ...dataToUpdate } = updatedData as any;
         await updateDoc(doc(db, 'mainCategories', id), dataToUpdate);
       },
 

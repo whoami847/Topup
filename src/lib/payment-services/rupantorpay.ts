@@ -48,7 +48,7 @@ class RupantorPayService implements PaymentService {
       const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'X-API-KEY': gateway.storePassword,
+        'X-API-KEY': gateway.storePassword || '',
         'X-CLIENT': clientHost,
       };
 
@@ -122,8 +122,8 @@ class RupantorPayService implements PaymentService {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'X-API-KEY': gateway.storePassword,
-                'X-CLIENT': gateway.storeId, 
+                'X-API-KEY': gateway.storePassword || '',
+                'X-CLIENT': gateway.id,
             },
             body: JSON.stringify({ tran_id: tran_id }),
         });

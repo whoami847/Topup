@@ -20,8 +20,24 @@ import {
 } from 'lucide-react';
 import { subDays, format, parse, isAfter } from 'date-fns';
 import Link from 'next/link';
+import { LucideIcon } from 'lucide-react';
 
-const DashboardStatCard = ({ title, value, icon: Icon, description, formatAsCurrency = false }) => (
+interface DashboardStatCardProps {
+  title: string;
+  value: number;
+  icon: LucideIcon;
+  description: string;
+  formatAsCurrency?: boolean;
+}
+
+interface QuickNavCardProps {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  notificationCount?: number;
+}
+
+const DashboardStatCard = ({ title, value, icon: Icon, description, formatAsCurrency = false }: DashboardStatCardProps) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -36,7 +52,7 @@ const DashboardStatCard = ({ title, value, icon: Icon, description, formatAsCurr
   </Card>
 );
 
-const QuickNavCard = ({ href, icon: Icon, label, notificationCount = 0 }) => (
+const QuickNavCard = ({ href, icon: Icon, label, notificationCount = 0 }: QuickNavCardProps) => (
     <Link href={href} className="block h-full relative group">
       <Card className="p-4 h-full flex flex-col items-center justify-center gap-2 text-center text-muted-foreground group-hover:text-primary group-hover:bg-primary/5 group-hover:border-primary transition-colors duration-200">
         {notificationCount > 0 && (

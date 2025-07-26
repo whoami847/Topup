@@ -11,8 +11,16 @@ import { cn } from '@/lib/utils';
 import { subDays, isAfter, parse } from 'date-fns';
 import { LoginRequired } from '@/components/auth/login-required';
 import { Skeleton } from '@/components/ui/skeleton';
+import { LucideIcon } from 'lucide-react';
 
-const DashboardStatCard = ({ title, value, icon: Icon, formatAsCurrency = false }) => (
+interface DashboardStatCardProps {
+  title: string;
+  value: number;
+  icon: LucideIcon;
+  formatAsCurrency?: boolean;
+}
+
+const DashboardStatCard = ({ title, value, icon: Icon, formatAsCurrency = false }: DashboardStatCardProps) => (
   <Card className="bg-secondary/50">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
