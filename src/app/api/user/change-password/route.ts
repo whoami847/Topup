@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 
 async function verifyAdminFromToken(request: NextRequest): Promise<boolean> {
+  if (!adminAuth) {
+    console.error('Firebase Admin Auth is not initialized');
+    return false;
+  }
+  
   const authorization = request.headers.get('Authorization');
   if (authorization?.startsWith('Bearer ')) {
     const idToken = authorization.split('Bearer ')[1];
@@ -19,6 +24,10 @@ async function verifyAdminFromToken(request: NextRequest): Promise<boolean> {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!adminAuth) {
+      return NextResponse.json({ message: 'Internal Server Error: Firebase Admin not configured' }, { status: 500 });
+    }
+
     const isCallerAdmin = await verifyAdminFromToken(req);
     if (!isCallerAdmin) {
       return NextResponse.json({ message: 'Forbidden: Caller is not an admin' }, { status: 403 });

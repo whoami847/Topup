@@ -1,10 +1,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { doc, updateDoc } from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 
 // This function is now only used for getting the caller's identity
 async function getDecodedToken(request: NextRequest): Promise<admin.auth.DecodedIdToken | null> {
+  if (!adminAuth) {
+    console.error('Firebase Admin Auth is not initialized');
+    return null;
+  }
+  
   const authorization = request.headers.get('Authorization');
   if (authorization?.startsWith('Bearer ')) {
     const idToken = authorization.split('Bearer ')[1];
@@ -20,6 +25,10 @@ async function getDecodedToken(request: NextRequest): Promise<admin.auth.Decoded
 
 export async function POST(req: NextRequest) {
   try {
+    if (!adminAuth || !adminDb) {
+      return NextResponse.json({ message: 'Internal Server Error: Firebase Admin not configured' }, { status: 500 });
+    }
+
     const decodedToken = await getDecodedToken(req);
     if (!decodedToken) {
         return NextResponse.json({ message: 'Unauthorized: Invalid token' }, { status: 401 });
@@ -56,9 +65,9 @@ export async function POST(req: NextRequest) {
     // Set custom claims in Firebase Auth
     await adminAuth.setCustomUserClaims(userId, { admin: isAdmin });
     
-    // Update the user's document in Firestore for easy querying on the client
-    const userDocRef = doc(adminDb, 'users', userId);
-    await updateDoc(userDocRef, { isAdmin: isAdmin });
+    // Update the user's document in Firestore for easy querying on the client using admin SDK
+    const userDocRef = adminDb.collection('users').doc(userId);
+    await userDocRef.update({ isAdmin: isAdmin });
 
     return NextResponse.json({ success: true, message: `User role updated successfully.` }, { status: 200 });
   } catch (error: any) {
