@@ -116,6 +116,7 @@ class RupantorPayService implements PaymentService {
     const verifyUrl = gateway.isLive ? VERIFY_API_URL_LIVE : VERIFY_API_URL_SANDBOX;
 
     try {
+        const clientHost = req.headers.get('host') || 'localhost';
         console.log(`RupantorPay: Verifying transaction ${tran_id} at ${verifyUrl}`);
         const response = await fetch(verifyUrl, {
             method: 'POST',
@@ -123,7 +124,7 @@ class RupantorPayService implements PaymentService {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-API-KEY': gateway.storePassword || '',
-                'X-CLIENT': gateway.id,
+                'X-CLIENT': clientHost,
             },
             body: JSON.stringify({ tran_id: tran_id }),
         });
